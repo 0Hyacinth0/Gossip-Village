@@ -38,6 +38,12 @@ interface InitializationResponse {
   npcs: any[];
 }
 
+interface InteractionResponse {
+  reply: string;
+  revealedInfo: string | null; // If they reveal a secret, put it here
+  moodChange: string;
+}
+
 // --- API Functions ---
 
 export const generateVillage = async (villagerCount: number): Promise<NPC[]> => {
@@ -106,6 +112,50 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
     }));
   });
 };
+
+export const interactWithNPC = async (npc: NPC, question: string): Promise<InteractionResponse> => {
+    const prompt = `
+      Roleplay Simulation.
+      
+      You are playing the role of: ${npc.name} (${npc.role}, Age: ${npc.age}).
+      Your Personality: ${npc.publicPersona}.
+      Your Current Mood: ${npc.currentMood}.
+      Your Deepest Secret (Hidden): ${npc.deepSecret}.
+      Your Life Goal: ${npc.lifeGoal}.
+      
+      A mysterious voice (The Player/Observer) asks you: "${question}"
+      
+      Instructions:
+      1. Respond in character (Simpilified Chinese). Keep it short (under 50 words).
+      2. Decide if you want to reveal any information based on the question.
+         - If the player guesses your secret or pressures you correctly, you might slip up or confess.
+         - If the question is irrelevant, be dismissive.
+      3. Determine how this interaction affects your mood.
+      
+      Output JSON.
+    `;
+  
+    return runWithRetry(async () => {
+      const response = await ai.models.generateContent({
+        model: SIMULATION_MODEL,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              reply: { type: Type.STRING, description: "NPC's spoken response" },
+              revealedInfo: { type: Type.STRING, nullable: true, description: "If a secret or valid rumor is revealed, summarize it here. Otherwise null." },
+              moodChange: { type: Type.STRING, description: "New mood after interaction" }
+            },
+            required: ['reply', 'moodChange']
+          }
+        }
+      });
+  
+      return JSON.parse(response.text || "{}") as InteractionResponse;
+    });
+  };
 
 export const simulateDay = async (
   currentState: GameState,

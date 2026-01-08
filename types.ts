@@ -1,3 +1,4 @@
+
 export enum Gender {
   Male = 'Male',
   Female = 'Female'
@@ -28,7 +29,7 @@ export interface NPC {
 
 export interface IntelCard {
   id: string;
-  type: 'Observation' | 'Secret' | 'Rumor' | 'Fabrication';
+  type: 'Observation' | 'Secret' | 'Rumor' | 'Fabrication' | 'Confession';
   content: string;
   sourceId?: string; // Who originated this info?
   timestamp: number; // Day number
@@ -70,4 +71,4 @@ export interface GameState {
   gridMap: string[][]; // 4x4 Dynamic Location Names
 }
 
-export type ActionType = 'WHISPER' | 'BROADCAST' | 'FABRICATE' | 'INCEPTION';
+export type ActionType = 'WHISPER' | 'BROADCAST' | 'FABRICATE' | 'INCEPTION' | 'INTERROGATE';

@@ -25,6 +25,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
   const modeLabels: Record<ActionType, string> = {
     'WHISPER': '私信',
     'BROADCAST': '广播',
+    'INTERROGATE': '问询',
     'FABRICATE': '伪造',
     'INCEPTION': '托梦'
   };
@@ -32,7 +33,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
   const handleExecute = () => {
     let content = "";
     
-    if (mode === 'FABRICATE' || mode === 'INCEPTION') {
+    if (mode === 'FABRICATE' || mode === 'INCEPTION' || mode === 'INTERROGATE') {
       if (!customInput.trim()) return;
       content = customInput;
     } else {
@@ -46,7 +47,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
     setSelectedCardId(null);
   };
 
-  const getActionCost = (m: ActionType) => 1; // Simplify to 1 AP for now
+  const getActionCost = (m: ActionType) => m === 'INTERROGATE' ? 2 : 1;
 
   // Check if selected NPC is valid for interaction
   const isTargetInactive = selectedNPC && ['Dead', 'Jailed', 'Left Village', 'Escaped', 'Heartbroken'].includes(selectedNPC.status);
@@ -71,14 +72,14 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-2 mb-4">
-        {(['WHISPER', 'BROADCAST', 'FABRICATE', 'INCEPTION'] as ActionType[]).map(t => (
+      <div className="flex flex-wrap gap-1 mb-4">
+        {(['WHISPER', 'BROADCAST', 'INTERROGATE', 'FABRICATE', 'INCEPTION'] as ActionType[]).map(t => (
           <button
             key={t}
             onClick={() => setMode(t)}
             disabled={isSimulating}
             className={`
-              flex-1 py-2 text-xs font-bold border 
+              flex-1 min-w-[60px] py-2 text-[10px] font-bold border 
               ${mode === t 
                 ? 'bg-retro-accent text-retro-bg border-retro-accent' 
                 : 'text-stone-500 border-stone-700 hover:text-stone-300'
@@ -92,7 +93,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
       </div>
 
       {/* Context Content */}
-      <div className="flex-1 overflow-y-auto mb-4 bg-black/30 p-2 rounded border border-retro-border min-h-[150px]">
+      <div className="flex-1 overflow-y-auto mb-4 bg-black/30 p-2 rounded border border-retro-border min-h-[120px]">
         {mode === 'WHISPER' || mode === 'BROADCAST' ? (
           <div className="space-y-2">
             <p className="text-xs text-stone-500 mb-2">选择情报:</p>
@@ -113,13 +114,19 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
         ) : (
           <div className="h-full flex flex-col">
              <p className="text-xs text-stone-500 mb-2">
-                {mode === 'FABRICATE' ? '编写虚假谣言:' : '向目标植入念头:'}
+                {mode === 'FABRICATE' ? '编写虚假谣言:' : 
+                 mode === 'INCEPTION' ? '向目标植入念头:' :
+                 '输入你想问的问题 (消耗2AP):'}
              </p>
              <textarea
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
                 className="flex-1 bg-transparent border border-stone-700 p-2 text-sm text-retro-text resize-none focus:border-retro-accent outline-none"
-                placeholder={mode === 'FABRICATE' ? "例如：王村长其实是鬼魂。" : "例如：你突然极度害怕鸡。"}
+                placeholder={
+                    mode === 'FABRICATE' ? "例如：王村长其实是鬼魂。" : 
+                    mode === 'INCEPTION' ? "例如：你突然极度害怕鸡。" :
+                    "例如：你昨晚在后山做什么？(试着诈出他的秘密)"
+                }
              />
           </div>
         )}
@@ -127,12 +134,15 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
 
       {/* Target Info */}
       <div className="mb-4 text-xs h-6">
-        {mode === 'WHISPER' || mode === 'INCEPTION' ? (
+        {mode === 'WHISPER' || mode === 'INCEPTION' || mode === 'INTERROGATE' ? (
            selectedNPC ? (
              isTargetInactive ? (
                 <span className="text-stone-500">目标不可用: {selectedNPC.name} ({STATUS_MAP[selectedNPC.status] || selectedNPC.status})</span>
              ) : (
-                <span className="text-retro-green">目标: {selectedNPC.name}</span>
+                <span className="text-retro-green flex items-center gap-2">
+                    目标: {selectedNPC.name}
+                    {mode === 'INTERROGATE' && <span className="text-retro-red text-[10px] border border-retro-red px-1">Cost: 2 AP</span>}
+                </span>
              )
            ) : (
              <span className="text-retro-red animate-pulse">! 请在地图上选择目标 !</span>
@@ -148,9 +158,9 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
         disabled={
             actionPoints < getActionCost(mode) || 
             isSimulating ||
-            ((mode === 'WHISPER' || mode === 'INCEPTION') && (!selectedNPC || isTargetInactive)) ||
+            ((mode === 'WHISPER' || mode === 'INCEPTION' || mode === 'INTERROGATE') && (!selectedNPC || isTargetInactive)) ||
             ((mode === 'WHISPER' || mode === 'BROADCAST') && !selectedCardId) ||
-            ((mode === 'FABRICATE' || mode === 'INCEPTION') && !customInput.trim())
+            ((mode === 'FABRICATE' || mode === 'INCEPTION' || mode === 'INTERROGATE') && !customInput.trim())
         }
         className={`
             w-full py-3 font-bold uppercase tracking-widest text-sm
@@ -162,7 +172,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
             }
         `}
       >
-        {isSimulating ? '推演中...' : '执行'}
+        {isSimulating ? 'AI 处理中...' : `执行 (${getActionCost(mode)} AP)`}
       </button>
 
     </div>
