@@ -1,0 +1,172 @@
+import React, { useState } from 'react';
+import { ActionType, IntelCard, NPC } from '../types';
+import { STATUS_MAP } from '../constants';
+
+interface ActionPanelProps {
+  actionPoints: number;
+  intelInventory: IntelCard[];
+  selectedNPC: NPC | null;
+  onPerformAction: (type: ActionType, content: string, targetId?: string) => void;
+  isSimulating: boolean;
+}
+
+const ActionPanel: React.FC<ActionPanelProps> = ({ 
+  actionPoints, 
+  intelInventory, 
+  selectedNPC, 
+  onPerformAction,
+  isSimulating 
+}) => {
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [customInput, setCustomInput] = useState("");
+  const [mode, setMode] = useState<ActionType>('WHISPER');
+
+  // Map modes to Chinese labels
+  const modeLabels: Record<ActionType, string> = {
+    'WHISPER': '私信',
+    'BROADCAST': '广播',
+    'FABRICATE': '伪造',
+    'INCEPTION': '托梦'
+  };
+
+  const handleExecute = () => {
+    let content = "";
+    
+    if (mode === 'FABRICATE' || mode === 'INCEPTION') {
+      if (!customInput.trim()) return;
+      content = customInput;
+    } else {
+      const card = intelInventory.find(c => c.id === selectedCardId);
+      if (!card) return;
+      content = card.content;
+    }
+
+    onPerformAction(mode, content, selectedNPC?.id);
+    setCustomInput("");
+    setSelectedCardId(null);
+  };
+
+  const getActionCost = (m: ActionType) => 1; // Simplify to 1 AP for now
+
+  // Check if selected NPC is valid for interaction
+  const isTargetInactive = selectedNPC && ['Dead', 'Jailed', 'Left Village', 'Escaped', 'Heartbroken'].includes(selectedNPC.status);
+
+  return (
+    <div className="flex flex-col h-full bg-retro-panel border-t border-retro-border p-4">
+      
+      {/* Header: AP Display */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-bold text-retro-accent font-mono uppercase tracking-widest">
+            情报注入协议
+        </h3>
+        <div className="flex space-x-1">
+          {[...Array(3)].map((_, i) => (
+            <div 
+              key={i} 
+              className={`w-3 h-3 rounded-full border border-retro-accent ${i < actionPoints ? 'bg-retro-accent' : 'bg-transparent'}`} 
+            />
+          ))}
+          <span className="ml-2 text-xs text-retro-text">AP</span>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-2 mb-4">
+        {(['WHISPER', 'BROADCAST', 'FABRICATE', 'INCEPTION'] as ActionType[]).map(t => (
+          <button
+            key={t}
+            onClick={() => setMode(t)}
+            disabled={isSimulating}
+            className={`
+              flex-1 py-2 text-xs font-bold border 
+              ${mode === t 
+                ? 'bg-retro-accent text-retro-bg border-retro-accent' 
+                : 'text-stone-500 border-stone-700 hover:text-stone-300'
+              }
+              transition-colors
+            `}
+          >
+            {modeLabels[t]}
+          </button>
+        ))}
+      </div>
+
+      {/* Context Content */}
+      <div className="flex-1 overflow-y-auto mb-4 bg-black/30 p-2 rounded border border-retro-border min-h-[150px]">
+        {mode === 'WHISPER' || mode === 'BROADCAST' ? (
+          <div className="space-y-2">
+            <p className="text-xs text-stone-500 mb-2">选择情报:</p>
+            {intelInventory.length === 0 && <p className="text-xs italic text-stone-600">暂无情报。</p>}
+            {intelInventory.map(card => (
+              <div 
+                key={card.id}
+                onClick={() => setSelectedCardId(card.id)}
+                className={`
+                  p-2 border cursor-pointer text-xs
+                  ${selectedCardId === card.id ? 'border-retro-accent bg-retro-accent/10' : 'border-stone-700 hover:border-stone-500'}
+                `}
+              >
+                <span className="font-bold text-retro-accent">[{card.type}]</span> {card.content}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="h-full flex flex-col">
+             <p className="text-xs text-stone-500 mb-2">
+                {mode === 'FABRICATE' ? '编写虚假谣言:' : '向目标植入念头:'}
+             </p>
+             <textarea
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                className="flex-1 bg-transparent border border-stone-700 p-2 text-sm text-retro-text resize-none focus:border-retro-accent outline-none"
+                placeholder={mode === 'FABRICATE' ? "例如：王村长其实是鬼魂。" : "例如：你突然极度害怕鸡。"}
+             />
+          </div>
+        )}
+      </div>
+
+      {/* Target Info */}
+      <div className="mb-4 text-xs h-6">
+        {mode === 'WHISPER' || mode === 'INCEPTION' ? (
+           selectedNPC ? (
+             isTargetInactive ? (
+                <span className="text-stone-500">目标不可用: {selectedNPC.name} ({STATUS_MAP[selectedNPC.status] || selectedNPC.status})</span>
+             ) : (
+                <span className="text-retro-green">目标: {selectedNPC.name}</span>
+             )
+           ) : (
+             <span className="text-retro-red animate-pulse">! 请在地图上选择目标 !</span>
+           )
+        ) : (
+            <span className="text-stone-500">目标: 全体村民</span>
+        )}
+      </div>
+
+      {/* Execute Button */}
+      <button
+        onClick={handleExecute}
+        disabled={
+            actionPoints < getActionCost(mode) || 
+            isSimulating ||
+            ((mode === 'WHISPER' || mode === 'INCEPTION') && (!selectedNPC || isTargetInactive)) ||
+            ((mode === 'WHISPER' || mode === 'BROADCAST') && !selectedCardId) ||
+            ((mode === 'FABRICATE' || mode === 'INCEPTION') && !customInput.trim())
+        }
+        className={`
+            w-full py-3 font-bold uppercase tracking-widest text-sm
+            border-2 transition-all
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${actionPoints >= getActionCost(mode) 
+                ? 'bg-retro-bg text-retro-accent border-retro-accent hover:bg-retro-accent hover:text-retro-bg' 
+                : 'bg-stone-800 text-stone-500 border-stone-600'
+            }
+        `}
+      >
+        {isSimulating ? '推演中...' : '执行'}
+      </button>
+
+    </div>
+  );
+};
+
+export default ActionPanel;
