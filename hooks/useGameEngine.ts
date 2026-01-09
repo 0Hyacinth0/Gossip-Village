@@ -183,7 +183,7 @@ export const useGameEngine = () => {
     if (gameState.actionPoints < cost) return;
 
     const typeCN: Record<ActionType, string> = {
-        'WHISPER': '传音入密', 'BROADCAST': '江湖传闻', 'FABRICATE': '散布谣言', 'INCEPTION': '心魔植入', 'INTERROGATE': '拷问'
+        'WHISPER': '传音入密', 'BROADCAST': '江湖传闻', 'FABRICATE': '散布谣言', 'INCEPTION': '心魔植入', 'INTERROGATE': '拷问信息'
     };
 
     let targetDisplay = '全体侠士';

@@ -27,11 +27,11 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
 
   // Map modes to Chinese labels
   const modeLabels: Record<ActionType, string> = {
-    'WHISPER': '私信',
-    'BROADCAST': '广播',
-    'INTERROGATE': '问询',
-    'FABRICATE': '伪造',
-    'INCEPTION': '托梦'
+    'WHISPER': '传音入密',
+    'BROADCAST': '江湖传闻',
+    'INTERROGATE': '拷问信息',
+    'FABRICATE': '散布谣言',
+    'INCEPTION': '心魔植入'
   };
 
   const handleExecute = () => {
@@ -62,7 +62,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
       {/* Header: AP Display */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-retro-accent font-mono uppercase tracking-widest">
-            情报注入协议
+            信息控制
         </h3>
         <div className="flex space-x-1 items-center">
           {canUndo && (
