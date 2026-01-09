@@ -48,24 +48,30 @@ interface InteractionResponse {
 
 export const generateVillage = async (villagerCount: number): Promise<NPC[]> => {
   const prompt = `
-    Generate ${villagerCount} unique, complex characters for a Chinese pixel-art style village simulation game called "Gossip Village" (八卦村).
+    Generate ${villagerCount} unique, complex characters for a Wuxia/Xianxia style game (specifically inspired by JX3/剑网3 style).
+    The setting is "Rice Fragrance Village" (稻香村), a legendary starting place in the Jianghu.
     
     Current Task: Create initial NPC data.
     
     **CRITICAL DESIGN INSTRUCTIONS:**
-    1. **Diversity**: Do NOT just generate "Farmer" or "Chief". Include diverse roles like: 
-       - "Wandering Swordsman" (流浪刀客)
-       - "Corrupt Scholar" (落第秀才)
-       - "Mad Monk" (疯和尚)
-       - "Exiled Noble" (流放贵族)
-       - "Witch/Shaman" (神婆)
-       - "Village Idiot" (守村人)
-    2. **Naming**: Use diverse Chinese naming styles. Full names (e.g., 柳三变), Nicknames (e.g., 鬼脚七), or Titles.
-    3. **Complex Relationships**: Ensure the "Deep Secret" creates potential conflicts. Examples:
-       - Illegitimate children.
-       - Past murders disguised as accidents.
-       - Forbidden lovers.
-       - Stolen heirlooms.
+    1. **Diversity (Sects & Roles)**: Include characters from famous sects:
+       - "Tian Ce" (天策 - Soldiers/Generals)
+       - "Chun Yang" (纯阳 - Taoists)
+       - "Wan Hua" (万花 - Doctors/Scholars)
+       - "Qi Xiu" (七秀 - Dancers/Swordswomen)
+       - "Shao Lin" (少林 - Monks)
+       - "Tang Sect" (唐门 - Assassins)
+       - "Cang Yun" (苍云 - Shield Guards)
+       - "Ming Jiao" (明教 - Cultists)
+       - "Beggar Sect" (丐帮 - Beggars/Drunks)
+       - "Hidden Sword" (藏剑 - Smiths/Rich Nobles)
+       - "Five Venoms" (五毒 - Shamans)
+    2. **Naming**: Use poetic Chinese Wuxia names (e.g., 叶英, 李承恩, 东方宇轩 style names).
+    3. **Complex Relationships**: Ensure the "Deep Secret" creates Jianghu conflict. Examples:
+       - Secretly a spy for the "Valley of Villains" (恶人谷).
+       - Suffering from "Qi Deviation" (走火入魔).
+       - Holds a piece of a legendary treasure map.
+       - Seeking revenge for a sect massacre.
     
     Language Requirement: 
     - The 'gender' field must be 'Male' or 'Female' (English Enum).
@@ -120,22 +126,23 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
 
 export const interactWithNPC = async (npc: NPC, question: string): Promise<InteractionResponse> => {
     const prompt = `
-      Roleplay Simulation.
+      Roleplay Simulation (Wuxia / JX3 Style).
       
-      You are playing the role of: ${npc.name} (${npc.role}, Age: ${npc.age}).
-      Your Personality: ${npc.publicPersona}.
-      Your Current Mood: ${npc.currentMood}.
-      Your Deepest Secret (Hidden): ${npc.deepSecret}.
-      Your Life Goal: ${npc.lifeGoal}.
+      You are: ${npc.name} (${npc.role}, Age: ${npc.age}).
+      Sect/Background: Inferred from role (e.g., Taoist -> Chun Yang).
+      Personality: ${npc.publicPersona}.
+      Current Mood: ${npc.currentMood}.
+      Deepest Secret: ${npc.deepSecret}.
+      Goal: ${npc.lifeGoal}.
       
-      A mysterious voice (The Player/Observer) asks you: "${question}"
+      A mysterious voice (The Observer) transmits a thought to you: "${question}"
       
       Instructions:
-      1. Respond in character (Simpilified Chinese). Keep it short (under 50 words).
-      2. Decide if you want to reveal any information based on the question.
-         - If the player guesses your secret or pressures you correctly, you might slip up or confess.
-         - If the question is irrelevant, be dismissive.
-      3. Determine how this interaction affects your mood.
+      1. Respond in "Jianghu" style Chinese (Semi-classical, martial arts terms, '侠义风').
+      2. Keep it short (under 50 words).
+      3. Logic:
+         - If the question touches your secret or sect weakness, be defensive or lie.
+         - If pressed correctly, you might confess your inner demons.
       
       Output JSON.
     `;
@@ -150,7 +157,7 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
             type: Type.OBJECT,
             properties: {
               reply: { type: Type.STRING, description: "NPC's spoken response" },
-              revealedInfo: { type: Type.STRING, nullable: true, description: "If a secret or valid rumor is revealed, summarize it here. Otherwise null." },
+              revealedInfo: { type: Type.STRING, nullable: true, description: "If a secret is revealed, summarize it. Otherwise null." },
               moodChange: { type: Type.STRING, description: "New mood after interaction" }
             },
             required: ['reply', 'moodChange']
@@ -169,93 +176,74 @@ export const simulateDay = async (
   
   // Prepare context for the AI
   const npcSummaries = currentState.npcs.map(n => 
-    `${n.name} (ID: ${n.id}, ${n.role}): Status=${n.status}, Goal=${n.lifeGoal}, Location=(${n.position.x},${n.position.y}). Secret: ${n.deepSecret}.`
+    `${n.name} (ID: ${n.id}, ${n.role}): Status=${n.status}, Goal=${n.lifeGoal}, Loc=(${n.position.x},${n.position.y}). Secret: ${n.deepSecret}.`
   ).join('\n');
 
   const relationshipSummaries = currentState.npcs.map(n => {
     const rels = n.relationships.map(r => `${r.targetName}(Aff:${r.affinity}, Trust:${r.trust})`).join(', ');
-    return `${n.name} feels about others: [${rels}]`;
+    return `${n.name} feels: [${rels}]`;
   }).join('\n');
 
-  // Prepare Location Map Context so AI knows where places are
   const mapContext = currentState.gridMap.flatMap((row, y) => 
     row.map((name, x) => `(x:${x}, y:${y}) is "${name}"`)
   ).join('\n');
 
-  let actionDescription = "The observer (player) did nothing today.";
+  let actionDescription = "The observer did nothing.";
   if (playerActions.length > 0) {
-    actionDescription = "The observer performed the following actions:\n" + 
-      playerActions.map(a => `- ACTION: ${a.type}. Content: "${a.content}". Target: ${a.targetId || 'ALL'}.`).join('\n');
+    actionDescription = "The observer actions:\n" + 
+      playerActions.map(a => `- ${a.type} to ${a.targetId || 'ALL'}: "${a.content}"`).join('\n');
   }
 
   // Objective formatting
-  let objectiveContext = "Game Mode: Sandbox (No specific win/loss condition).";
+  let objectiveContext = "Mode: Sandbox.";
   if (currentState.objective) {
     const { mode, description, deadlineDay } = currentState.objective;
     objectiveContext = `
-      CURRENT GAME MODE: ${mode}
-      OBJECTIVE: ${description}
-      DEADLINE: Day ${deadlineDay || 'None'} (Current Day: ${currentState.day})
+      MODE: ${mode}
+      GOAL: ${description}
+      DEADLINE: Day ${deadlineDay} (Current: ${currentState.day})
       
-      VICTORY/DEFEAT RULES:
-      - Matchmaker Mode: 
-        * Victory if target couple gets Married (Status 'Married').
-        * DEFEAT if target couple Affinity < -50 (Must set Status to 'Heartbroken').
-        * DEFEAT if deadline passed without marriage.
-      - Detective Mode: 
-        * Victory if player BROADCASTS the correct accusation regarding the culprit.
-        * DEFEAT if player BROADCASTS a WRONG accusation (Culprit escapes, must set Status to 'Escaped').
-        * DEFEAT if deadline passed (Culprit escapes, set Status to 'Escaped').
-      - Chaos Mode:
-        * Victory if > 50% of village is Dead, Jailed, or Left Village.
-        * DEFEAT if deadline passed.
+      RULES:
+      - Matchmaker: Win if Married. Lose if Heartbroken/Affinity<-50.
+      - Detective: Win if correct Broadcast accusation. Lose if wrong accusation or Culprit Escapes.
+      - Chaos: Win if >50% Dead/Jailed/Left.
     `;
   }
 
   const prompt = `
-    You are the simulation engine for Gossip Village (八卦村).
+    You are the simulation engine for "Gossip Village: JX3 Edition" (武侠版八卦村).
     
-    Current State:
-    Day: ${currentState.day}
-    Grid Size: 4x4 (Coordinates 0-3)
+    Setting: A wuxia village where various sects (Tian Ce, Chun Yang, Tang Sect, etc.) coexist uneasily.
     
-    Map Locations (Use these coordinates for movement):
+    Map:
     ${mapContext}
 
-    Villagers:
+    Characters (Jianghu Heroes/Villains):
     ${npcSummaries}
 
     Relationships:
     ${relationshipSummaries}
 
-    Player Actions Today:
+    Player Actions:
     ${actionDescription}
 
     ${objectiveContext}
 
     Task:
-    Simulate ONE day of interactions, prioritizing DRAMA, COMPLEXITY, and CONSEQUENCES.
+    Simulate ONE day. Prioritize WUXIA DRAMA (Duels, Qi Deviation, Sect Politics, Secret Manuals).
     
     Directives:
-    1. **Execute Player Intent**: If the player used INCEPTION, the NPC MUST attempt to do it.
-    2. **Escalate Conflict**: If Affinity < -50, characters should sabotage or fight.
-    3. **Resolve Goals**: NPCs should actively take steps to fulfill their 'Life Goal'.
-    4. **Events**: Introduce random events (e.g., A thief steals something, a fight breaks out, a secret meeting is witnessed).
-    5. **Evaluate Game Outcome**: Check the "VICTORY/DEFEAT RULES" above.
+    1. **Events**: Generate events like "Practicing swords", "Drinking at tavern", "Spying on other sects", "Healing injuries".
+    2. **Conflict**: High affinity = Sworn Brothers/Lovers. Low affinity = Mortal Enemies/Feuds.
+    3. **Movement**:
+       - Chun Yang -> Meditate in Mountains/Temples.
+       - Beggars -> Markets/Ditches.
+       - Tang Sect -> Shadows/Forests.
+       - Tian Ce -> Camps/Open grounds.
+       - Wan Hua -> Gardens/Clinics.
+    4. **Language**: Use SIMPLIFIED CHINESE with Wuxia flavor (e.g., instead of "Sad", use "黯然神伤"; instead of "Angry", use "怒发冲冠").
     
-    6. **Movement Rules (CRITICAL)**: 
-       - **Contextual Movement**: Update the NPC's \`newPosition\` to match their ACTION.
-         * Example: Visiting someone? Go to their house.
-         * Example: Plotting? Go to Woods or Graveyard.
-         * Example: Socializing? Go to Tavern or Square.
-       - NPCs can move to ANY valid coordinate (0-3, 0-3).
-       - **Exceptions**: If Status is 'Dead', 'Jailed', 'Left Village', 'Escaped', or 'Heartbroken', do NOT move them.
-
-    Language Requirement:
-    - **ALL output text (thoughts, actions, newspaper articles, headlines, rumors, gameOutcome.reason) MUST BE IN SIMPLIFIED CHINESE.**
-    - Only JSON keys should remain in English.
-
-    Return strictly JSON. Keep logs concise.
+    Return strictly JSON.
   `;
 
   return runWithRetry(async () => {

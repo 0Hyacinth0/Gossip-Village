@@ -37,7 +37,7 @@ const App: React.FC = () => {
         {/* Top Bar */}
         <div className="h-12 border-b border-retro-border flex items-center justify-between px-4 bg-retro-panel z-10 shrink-0">
             <div className="flex items-center gap-4">
-                <span className="text-retro-accent font-bold">八卦村</span>
+                <span className="text-retro-accent font-bold">八卦稻香村</span>
                 <span className="text-xs text-stone-500">第 {engine.gameState.day} 天</span>
                 {engine.gameState.objective && (
                     <span className="text-xs text-retro-text bg-stone-800 px-2 py-1 rounded border border-stone-600 truncate max-w-[200px] md:max-w-md" title={engine.gameState.objective.description}>

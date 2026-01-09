@@ -16,7 +16,7 @@ const NewspaperModal: React.FC<NewspaperModalProps> = ({ news, day, onClose }) =
         
         {/* Header */}
         <div className="border-b-4 border-black p-4 text-center">
-            <h1 className="text-4xl font-serif font-black uppercase tracking-tighter">村口日报</h1>
+            <h1 className="text-4xl font-serif font-black uppercase tracking-tighter">稻香日报</h1>
             <div className="flex justify-between text-xs font-bold border-t-2 border-black mt-2 pt-1">
                 <span>第 {day} 期</span>
                 <span>价格: 免费</span>

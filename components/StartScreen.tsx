@@ -18,7 +18,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-retro-bg text-retro-text flex flex-col items-center justify-center p-4 font-mono">
-      <h1 className="text-6xl text-retro-accent mb-4 font-bold tracking-tighter">八卦村</h1>
+      <h1 className="text-6xl text-retro-accent mb-4 font-bold tracking-tighter">八卦稻香村</h1>
       <h2 className="text-2xl mb-8 text-stone-500 uppercase tracking-widest">Gossip Village</h2>
       
       {/* Mode Selection */}
@@ -40,7 +40,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
 
       <div className="max-w-md text-center text-sm space-y-4 mb-8 text-stone-400">
           <p>你是观察者。</p>
-          <p>几个村民居住在这里。他们有秘密。他们八卦。他们……</p>
+          <p>几个村民居住在稻香村中。他们有秘密。他们各有目的。他们……</p>
           <p>你的目标是操控他们的现实。</p>
       </div>
 
@@ -51,7 +51,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
           disabled={isSimulating}
           className="px-8 py-4 bg-retro-panel border-2 border-retro-accent text-retro-accent hover:bg-retro-accent hover:text-retro-bg transition-all font-bold text-lg disabled:opacity-50"
       >
-          {isSimulating ? '正在生成世界...' : '进入村庄'}
+          {isSimulating ? '正在生成世界...' : '进入稻香村'}
       </button>
     </div>
   );
