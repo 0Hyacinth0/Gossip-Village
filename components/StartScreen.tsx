@@ -40,7 +40,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
 
       <div className="max-w-md text-center text-sm space-y-4 mb-8 text-stone-400">
           <p>你是观察者。</p>
-          <p>几个村民居住在稻香村中。他们有秘密。他们各有目的。他们……</p>
+          <p>几位身份背景各异的江湖侠士居住在稻香村中。他们有秘密。他们各有目的。他们……</p>
           <p>你的目标是操控他们的现实。</p>
       </div>
 

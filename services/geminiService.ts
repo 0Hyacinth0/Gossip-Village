@@ -125,6 +125,11 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
 };
 
 export const interactWithNPC = async (npc: NPC, question: string): Promise<InteractionResponse> => {
+    // Construct relationship context string
+    const relationshipsCtx = npc.relationships.map(r => 
+        `- ${r.targetName}: ${r.type} (Affinity: ${r.affinity})`
+    ).join('\n');
+
     const prompt = `
       Roleplay Simulation (Wuxia / JX3 Style).
       
@@ -135,14 +140,19 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
       Deepest Secret: ${npc.deepSecret}.
       Goal: ${npc.lifeGoal}.
       
+      Your Social Circle:
+      ${relationshipsCtx || "No significant relationships yet."}
+
       A mysterious voice (The Observer) transmits a thought to you: "${question}"
       
       Instructions:
       1. Respond in "Jianghu" style Chinese (Semi-classical, martial arts terms, '侠义风').
       2. Keep it short (under 50 words).
-      3. Logic:
+      3. **Behavioral Logic**:
+         - If the question mentions an **Enemy**, speak with hostility, suspicion, or disdain.
+         - If it mentions a **Lover**, speak with deep affection and protectiveness.
+         - If it mentions a **Master/Disciple**, show respect or authority.
          - If the question touches your secret or sect weakness, be defensive or lie.
-         - If pressed correctly, you might confess your inner demons.
       
       Output JSON.
     `;
@@ -230,15 +240,29 @@ export const simulateDay = async (
     ${objectiveContext}
 
     Task:
-    Simulate ONE day. Prioritize WUXIA DRAMA (Duels, Qi Deviation, Sect Politics, Secret Manuals).
+    Simulate ONE day. Prioritize WUXIA DRAMA.
+    
+    **CRITICAL: Relationship-Driven Behavior**:
+    1. **Enemy (仇敌)**: 
+       - ACTION: Must generate conflict (Duels, Sabotage, Arguments).
+       - THOUGHT: Suspicious, hateful, planning revenge.
+    2. **Lover (情缘)**: 
+       - ACTION: Secret meetings, gifting jade/swords, healing each other.
+       - THOUGHT: Longing, protective, worried.
+    3. **Master/Disciple (师徒)**: 
+       - ACTION: Training (Kung Fu), scolding, imparting secrets.
+       - THOUGHT: Respect (Disciple) / Pride or Disappointment (Master).
+    4. **Friend (朋友)**: 
+       - ACTION: Drinking wine, sharing rumors, sparring friendly.
     
     Directives:
-    1. **Events**: Generate events like "Practicing swords", "Drinking at tavern", "Spying on other sects", "Healing injuries".
-    2. **Conflict**: Update affinity and **Relationship Type**.
-       - If affinity > 60 and romance, set type='Lover'.
-       - If affinity < -50 and fighting, set type='Enemy'.
-       - If teaching kung fu, set type='Master'/'Disciple'.
-       - If purely social, set type='Friend'.
+    1. **Events**: Generate events based on the relationships above. If no strong relationship, create chance encounters.
+    2. **Conflict Rules**: 
+       - Affinities change dynamically based on interactions.
+       - **Update Relationship Type**:
+         - If Affinity > 60 and romance triggers -> set 'Lover'.
+         - If Affinity < -60 and violence triggers -> set 'Enemy'.
+         - If teaching skills -> set 'Master'/'Disciple'.
     3. **Movement**:
        - Chun Yang -> Meditate in Mountains/Temples.
        - Beggars -> Markets/Ditches.
