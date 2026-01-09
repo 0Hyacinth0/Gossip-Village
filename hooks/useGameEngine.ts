@@ -79,7 +79,8 @@ export const useGameEngine = () => {
     setGameState(prev => ({ ...prev, isSimulating: true }));
     setErrorMsg(null);
     try {
-        const rawNPCs = await generateVillage(6);
+        // Generate 10 Villagers for more complexity
+        const rawNPCs = await generateVillage(10);
         
         // Map & Position Logic
         const newGridMap = JSON.parse(JSON.stringify(LOCATION_MAP));
@@ -94,26 +95,55 @@ export const useGameEngine = () => {
             const n = npc.name;
             const p = npc.publicPersona || '';
             let householdKey = null;
+
+            // Expanded Household/Role Logic
             if (r.includes('村长') || n.includes('村长') || p.includes('村长之')) householdKey = 'CHIEF';
             else if (r.includes('铁匠') || n.includes('铁匠')) householdKey = 'SMITH';
             else if (r.includes('医') || n.includes('医') || r.includes('药')) householdKey = 'DOCTOR';
-            else if (r.includes('杂货') || n.includes('杂货')) householdKey = 'GROCER';
+            else if (r.includes('杂货') || n.includes('杂货') || r.includes('商')) householdKey = 'GROCER';
             else if (r.includes('猎') || n.includes('猎')) householdKey = 'HUNTER';
-
+            else if (r.includes('和尚') || r.includes('僧') || r.includes('尼') || r.includes('道')) householdKey = 'MONK';
+            else if (r.includes('书生') || r.includes('秀才') || r.includes('老师') || r.includes('学')) householdKey = 'SCHOLAR';
+            else if (r.includes('乞丐') || r.includes('流浪') || r.includes('疯')) householdKey = 'BEGGAR';
+            else if (r.includes('寡妇') || r.includes('媒婆')) householdKey = 'AUNTIE';
+            else if (r.includes('屠') || r.includes('肉')) householdKey = 'BUTCHER';
+            else if (r.includes('酒') || r.includes('厨') || r.includes('小二')) householdKey = 'TAVERN';
+            
             let pos;
             if (householdKey && householdLocations[householdKey]) {
+                // Join existing household
                 pos = householdLocations[householdKey];
             } else {
+                // Find a new slot
                 pos = availableSlots.pop() || {x: 0, y: 0};
                 if (householdKey) householdLocations[householdKey] = pos;
 
-                // Update Map Name Logic
-                let locName = `${n}家`;
+                // Update Map Name Logic with more diversity
+                let locName = `${n}家`; // Default
+                
+                // Specific Location Mappings (Try to reuse existing map logic or rename sensibly)
                 if (householdKey === 'CHIEF') locName = '村长府邸';
                 else if (householdKey === 'SMITH') locName = '铁匠铺';
                 else if (householdKey === 'DOCTOR') locName = '回春堂';
                 else if (householdKey === 'GROCER') locName = '杂货铺';
                 else if (householdKey === 'HUNTER') locName = '猎户小屋';
+                else if (householdKey === 'MONK') locName = '破庙'; // Reuse Temple
+                else if (householdKey === 'SCHOLAR') locName = '私塾';
+                else if (householdKey === 'BEGGAR') locName = '臭水沟'; // Reuse Ditch
+                else if (householdKey === 'BUTCHER') locName = '肉铺';
+                else if (householdKey === 'TAVERN') locName = '小酒馆';
+                else if (householdKey === 'AUNTIE') locName = '幽静小院';
+                
+                // Only rename if it's a generic slot (not overriding "Graveyard" or "Woods" unless necessary)
+                // Actually, let's just overwrite for the 'Living' feel, unless it is a special location
+                // Current map:
+                // 0: ['后山荒地', '密林深处', '自家农田', '臭水沟']
+                // 1: ['破庙', '村长家', '中央广场', '老中医馆']
+                // 2: ['铁匠铺', '杂货铺', '王大妈家', '李二狗家']
+                // 3: ['乱葬岗', '小黑屋', '村口大门', '村外驿站']
+                
+                // Smart Overwrite: If the NPC maps to a 'concept' that already exists, try to place them there first?
+                // For simplicity in this retro game, we just rename the cell to reflect the new owner
                 newGridMap[pos.y][pos.x] = locName;
             }
             return { ...npc, position: pos };
@@ -138,7 +168,7 @@ export const useGameEngine = () => {
             gridMap: newGridMap,
             logs: [...prev.logs, {
                 day: 1,
-                content: `村庄已生成。目标: ${objective.description}`,
+                content: `村庄已生成 (10人)。目标: ${objective.description}`,
                 type: 'System'
             }]
         }));
@@ -162,8 +192,8 @@ export const useGameEngine = () => {
     let targetNPC = null;
     if (targetId) {
         targetNPC = gameState.npcs.find(n => n.id === targetId);
-        // If it's NOT broadcast, we show the specific name. If it IS broadcast, it remains '全体村民'.
-        if (type !== 'BROADCAST') {
+        // If it's NOT broadcast AND NOT fabricate, we show the specific name. 
+        if (type !== 'BROADCAST' && type !== 'FABRICATE') {
             targetDisplay = targetNPC ? targetNPC.name : '未知目标';
         }
     }
@@ -232,7 +262,7 @@ export const useGameEngine = () => {
         
         // Reconstruct the exact log string to find and remove it
         let targetDisplay = '全体村民';
-        if (lastAction.type !== 'BROADCAST' && lastAction.targetId) {
+        if (lastAction.type !== 'BROADCAST' && lastAction.type !== 'FABRICATE' && lastAction.targetId) {
              const t = prev.npcs.find(n => n.id === lastAction.targetId);
              targetDisplay = t ? t.name : '未知目标';
         }

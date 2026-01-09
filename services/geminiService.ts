@@ -48,24 +48,29 @@ interface InteractionResponse {
 
 export const generateVillage = async (villagerCount: number): Promise<NPC[]> => {
   const prompt = `
-    Generate ${villagerCount} unique, quirky characters for a Chinese pixel-art style village simulation game called "Gossip Village" (八卦村).
+    Generate ${villagerCount} unique, complex characters for a Chinese pixel-art style village simulation game called "Gossip Village" (八卦村).
     
     Current Task: Create initial NPC data.
+    
+    **CRITICAL DESIGN INSTRUCTIONS:**
+    1. **Diversity**: Do NOT just generate "Farmer" or "Chief". Include diverse roles like: 
+       - "Wandering Swordsman" (流浪刀客)
+       - "Corrupt Scholar" (落第秀才)
+       - "Mad Monk" (疯和尚)
+       - "Exiled Noble" (流放贵族)
+       - "Witch/Shaman" (神婆)
+       - "Village Idiot" (守村人)
+    2. **Naming**: Use diverse Chinese naming styles. Full names (e.g., 柳三变), Nicknames (e.g., 鬼脚七), or Titles.
+    3. **Complex Relationships**: Ensure the "Deep Secret" creates potential conflicts. Examples:
+       - Illegitimate children.
+       - Past murders disguised as accidents.
+       - Forbidden lovers.
+       - Stolen heirlooms.
     
     Language Requirement: 
     - The 'gender' field must be 'Male' or 'Female' (English Enum).
     - All other text fields (name, role, publicPersona, deepSecret, currentMood, lifeGoal) MUST BE IN SIMPLIFIED CHINESE.
     
-    Each character needs:
-    - Name (Chinese style names like 王村长, 李大妈)
-    - Age, Gender, Role
-    - Public Persona (What everyone sees)
-    - Deep Secret (Something scandalous or hidden)
-    - Life Goal (Specific, actionable goal. e.g., "Marry the baker", "Kill the chief", "Become rich")
-    - Initial Mood
-    
-    Ensure conflicts of interest exist between characters (e.g. A wants to steal B's position).
-
     Output strictly valid JSON matching the schema.
   `;
 
@@ -229,21 +234,21 @@ export const simulateDay = async (
     ${objectiveContext}
 
     Task:
-    Simulate ONE day of interactions, prioritizing DRAMA and CONSEQUENCES.
+    Simulate ONE day of interactions, prioritizing DRAMA, COMPLEXITY, and CONSEQUENCES.
     
     Directives:
     1. **Execute Player Intent**: If the player used INCEPTION, the NPC MUST attempt to do it.
     2. **Escalate Conflict**: If Affinity < -50, characters should sabotage or fight.
     3. **Resolve Goals**: NPCs should actively take steps to fulfill their 'Life Goal'.
-    4. **Evaluate Game Outcome**: Check the "VICTORY/DEFEAT RULES" above. If a condition is met, fill the 'gameOutcome' field.
-    5. **End Game States**: Use 'Dead', 'Jailed', 'Left Village', 'Married', 'Heartbroken', 'Escaped' statuses freely if warranted.
+    4. **Events**: Introduce random events (e.g., A thief steals something, a fight breaks out, a secret meeting is witnessed).
+    5. **Evaluate Game Outcome**: Check the "VICTORY/DEFEAT RULES" above.
     
     6. **Movement Rules (CRITICAL)**: 
        - **Contextual Movement**: Update the NPC's \`newPosition\` to match their ACTION.
-         * Example: If Blacksmith is visiting the Chief, put Blacksmith at 'Village Chief House' coordinates.
-         * Example: If working, put them at their shop.
-         * Example: If meeting someone secretly, put them in 'Woods' or 'Back Mountain'.
-       - NPCs can move to ANY valid coordinate (0-3, 0-3) if the story requires it. No adjacency limit.
+         * Example: Visiting someone? Go to their house.
+         * Example: Plotting? Go to Woods or Graveyard.
+         * Example: Socializing? Go to Tavern or Square.
+       - NPCs can move to ANY valid coordinate (0-3, 0-3).
        - **Exceptions**: If Status is 'Dead', 'Jailed', 'Left Village', 'Escaped', or 'Heartbroken', do NOT move them.
 
     Language Requirement:
