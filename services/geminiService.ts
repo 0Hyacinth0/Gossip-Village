@@ -27,7 +27,7 @@ async function runWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000):
 
 interface SimulationResponse {
   logs: { npcName: string; thought: string; action: string }[];
-  relationshipUpdates: { sourceName: string; targetName: string; affinityChange: number; trustChange: number }[];
+  relationshipUpdates: { sourceName: string; targetName: string; affinityChange: number; trustChange: number; newType?: string }[];
   newIntel: { content: string; type: string; sourceName: string }[];
   newspaper: { headline: string; articles: string[] };
   npcStatusUpdates: { npcName: string; status: string; mood: string; newPosition?: {x: number, y: number} }[];
@@ -180,8 +180,8 @@ export const simulateDay = async (
   ).join('\n');
 
   const relationshipSummaries = currentState.npcs.map(n => {
-    const rels = n.relationships.map(r => `${r.targetName}(Aff:${r.affinity}, Trust:${r.trust})`).join(', ');
-    return `${n.name} feels: [${rels}]`;
+    const rels = n.relationships.map(r => `${r.targetName}[${r.type}]: ${r.affinity}`).join(', ');
+    return `${n.name} relationships: {${rels}}`;
   }).join('\n');
 
   const mapContext = currentState.gridMap.flatMap((row, y) => 
@@ -204,7 +204,7 @@ export const simulateDay = async (
       DEADLINE: Day ${deadlineDay} (Current: ${currentState.day})
       
       RULES:
-      - Matchmaker: Win if Married. Lose if Heartbroken/Affinity<-50.
+      - Matchmaker: Win if Married/Lover. Lose if Heartbroken/Affinity<-50.
       - Detective: Win if correct Broadcast accusation. Lose if wrong accusation or Culprit Escapes.
       - Chaos: Win if >50% Dead/Jailed/Left.
     `;
@@ -221,7 +221,7 @@ export const simulateDay = async (
     Characters (Jianghu Heroes/Villains):
     ${npcSummaries}
 
-    Relationships:
+    Relationships (Types: Friend, Enemy, Lover, Family, Master, Disciple):
     ${relationshipSummaries}
 
     Player Actions:
@@ -234,7 +234,11 @@ export const simulateDay = async (
     
     Directives:
     1. **Events**: Generate events like "Practicing swords", "Drinking at tavern", "Spying on other sects", "Healing injuries".
-    2. **Conflict**: High affinity = Sworn Brothers/Lovers. Low affinity = Mortal Enemies/Feuds.
+    2. **Conflict**: Update affinity and **Relationship Type**.
+       - If affinity > 60 and romance, set type='Lover'.
+       - If affinity < -50 and fighting, set type='Enemy'.
+       - If teaching kung fu, set type='Master'/'Disciple'.
+       - If purely social, set type='Friend'.
     3. **Movement**:
        - Chun Yang -> Meditate in Mountains/Temples.
        - Beggars -> Markets/Ditches.
@@ -275,7 +279,8 @@ export const simulateDay = async (
                   sourceName: { type: Type.STRING },
                   targetName: { type: Type.STRING },
                   affinityChange: { type: Type.INTEGER },
-                  trustChange: { type: Type.INTEGER }
+                  trustChange: { type: Type.INTEGER },
+                  newType: { type: Type.STRING, enum: ['None', 'Friend', 'Enemy', 'Lover', 'Family', 'Master', 'Disciple'], nullable: true }
                 },
                 required: ['sourceName', 'targetName', 'affinityChange', 'trustChange']
               }

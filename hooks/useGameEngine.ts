@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { GameState, NPC, LogEntry, ActionType, IntelCard, GameMode, GameObjective } from '../types';
+import { GameState, NPC, LogEntry, ActionType, IntelCard, GameMode, GameObjective, RelationshipType } from '../types';
 import { INITIAL_LOG_ENTRY, MAX_AP_PER_DAY, LOCATION_MAP } from '../constants';
 import { generateVillage, simulateDay, interactWithNPC } from '../services/geminiService';
 
@@ -47,7 +47,7 @@ export const useGameEngine = () => {
         return {
             mode: 'Matchmaker',
             targetIds: [targetA.id, targetB.id],
-            description: `红娘任务：撮合 ${targetA.name} 和 ${targetB.name} 结为神仙眷侣。`,
+            description: `红娘任务：撮合 ${targetA.name} 和 ${targetB.name} 结为神仙眷侣 (关系: Lover)。`,
             deadlineDay: 7
         };
     } else if (mode === 'Detective') {
@@ -320,11 +320,20 @@ export const useGameEngine = () => {
                     const target = prev.npcs.find(n => n.name === update.targetName);
                     if (target) {
                         const existingRelIndex = newRelationships.findIndex(r => r.targetId === target.id);
+                        
+                        // Parse new type or use 'None' if undefined
+                        const newTypeVal = (update.newType as RelationshipType) || 'None';
+                        
                         if (existingRelIndex >= 0) {
+                            const currentRel = newRelationships[existingRelIndex];
+                            // Only update type if the AI explicitly sent a new type (not None), or maintain old one
+                            const resolvedType = newTypeVal !== 'None' ? newTypeVal : currentRel.type;
+
                             newRelationships[existingRelIndex] = {
-                                ...newRelationships[existingRelIndex],
-                                affinity: Math.max(-100, Math.min(100, newRelationships[existingRelIndex].affinity + update.affinityChange)),
-                                trust: Math.max(0, Math.min(100, newRelationships[existingRelIndex].trust + update.trustChange))
+                                ...currentRel,
+                                affinity: Math.max(-100, Math.min(100, currentRel.affinity + update.affinityChange)),
+                                trust: Math.max(0, Math.min(100, currentRel.trust + update.trustChange)),
+                                type: resolvedType
                             };
                         } else {
                             newRelationships.push({
@@ -332,7 +341,8 @@ export const useGameEngine = () => {
                                 targetName: target.name,
                                 affinity: update.affinityChange,
                                 trust: 50 + update.trustChange,
-                                knownSecrets: []
+                                knownSecrets: [],
+                                type: newTypeVal
                             });
                         }
                     }

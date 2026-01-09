@@ -1,10 +1,20 @@
 import React from 'react';
-import { NPC } from '../types';
+import { NPC, RelationshipType } from '../types';
 import { STATUS_MAP } from '../constants';
 
 interface NPCDetailProps {
   npc: NPC | null;
 }
+
+const RELATIONSHIP_TYPE_MAP: Record<string, string> = {
+    'Lover': '情缘',
+    'Enemy': '死敌',
+    'Master': '师父',
+    'Disciple': '徒弟',
+    'Family': '亲眷',
+    'Friend': '好友',
+    'None': '普通'
+};
 
 const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
   if (!npc) {
@@ -79,16 +89,34 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
          <h3 className="text-retro-text text-xs uppercase font-bold mb-1">人际关系</h3>
          <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
             {npc.relationships.length === 0 && <span className="text-stone-600 italic text-xs">暂无重要关系。</span>}
-            {npc.relationships.map((rel, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-black/20 p-1 px-2 text-xs">
-                    <span>{rel.targetName}</span>
-                    <div className="flex gap-2">
-                        <span className={rel.affinity > 0 ? "text-retro-green" : "text-retro-red"}>
-                            {rel.affinity > 0 ? '+' : ''}{rel.affinity}
-                        </span>
+            {npc.relationships.map((rel, idx) => {
+                const typeCN = RELATIONSHIP_TYPE_MAP[rel.type] || rel.type;
+                const isSpecial = rel.type && rel.type !== 'None' && rel.type !== 'Friend';
+                
+                let badgeClass = "text-stone-500 border-stone-600"; // Default
+                if (rel.type === 'Lover') badgeClass = "text-pink-400 border-pink-400";
+                if (rel.type === 'Enemy') badgeClass = "text-red-500 border-red-500";
+                if (rel.type === 'Master' || rel.type === 'Disciple') badgeClass = "text-blue-400 border-blue-400";
+                if (rel.type === 'Family') badgeClass = "text-green-400 border-green-400";
+
+                return (
+                    <div key={idx} className="flex justify-between items-center bg-black/20 p-1 px-2 text-xs border-b border-white/5 last:border-0">
+                        <div className="flex items-center gap-2">
+                             <span>{rel.targetName}</span>
+                             {isSpecial && (
+                                <span className={`text-[9px] border px-1 rounded ${badgeClass}`}>
+                                    {typeCN}
+                                </span>
+                             )}
+                        </div>
+                        <div className="flex gap-2">
+                            <span className={rel.affinity > 0 ? "text-retro-green" : "text-retro-red"}>
+                                {rel.affinity > 0 ? '+' : ''}{rel.affinity}
+                            </span>
+                        </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
          </div>
       </div>
     </div>

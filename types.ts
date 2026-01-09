@@ -4,11 +4,14 @@ export enum Gender {
   Female = 'Female'
 }
 
+export type RelationshipType = 'None' | 'Friend' | 'Enemy' | 'Lover' | 'Family' | 'Master' | 'Disciple';
+
 export interface Relationship {
   targetId: string;
   targetName: string;
   affinity: number; // -100 to 100 (Hate <-> Love)
   trust: number;    // 0 to 100
+  type: RelationshipType; // The nature of the bond
   knownSecrets: string[]; // List of secrets this NPC knows about the target
 }
 

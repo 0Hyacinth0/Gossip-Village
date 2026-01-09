@@ -59,7 +59,10 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                     if (selectedNPC && selectedNPC.id !== npc.id) {
                         const rel = selectedNPC.relationships.find(r => r.targetId === npc.id);
                         if (rel) {
-                            if (rel.affinity > 20) relationColor = "border-retro-green";
+                            if (rel.type === 'Lover') relationColor = "border-pink-500";
+                            else if (rel.type === 'Enemy') relationColor = "border-red-600";
+                            else if (rel.type === 'Master' || rel.type === 'Disciple') relationColor = "border-blue-400";
+                            else if (rel.affinity > 20) relationColor = "border-retro-green";
                             else if (rel.affinity < -20) relationColor = "border-retro-red";
                         }
                     }
@@ -178,10 +181,37 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                 const x2 = getCenter(target.position.x);
                 const y2 = getCenter(target.position.y);
 
-                const isPositive = rel.affinity >= 0;
-                const color = isPositive ? '#5d8a66' : '#c9564c';
-                const opacity = Math.min(1, Math.abs(rel.affinity) / 50 + 0.2);
-                const width = Math.max(1, Math.abs(rel.affinity) / 20);
+                let color = '#5d8a66'; // default positive green
+                let dashArray = '0';
+                let opacity = Math.min(1, Math.abs(rel.affinity) / 50 + 0.3);
+                let width = Math.max(1, Math.abs(rel.affinity) / 20);
+
+                if (rel.type === 'Lover') {
+                    color = '#ec4899'; // Pink
+                    width = 4;
+                    opacity = 0.9;
+                } else if (rel.type === 'Enemy') {
+                    color = '#dc2626'; // Red
+                    width = 3;
+                    opacity = 0.9;
+                } else if (rel.type === 'Master' || rel.type === 'Disciple') {
+                    color = '#60a5fa'; // Blue
+                    width = 2;
+                    dashArray = '5,5'; // Dashed for master/disciple
+                    opacity = 0.8;
+                } else if (rel.type === 'Family') {
+                    color = '#5d8a66'; // Green
+                    width = 3;
+                } else if (rel.type === 'Friend') {
+                    color = '#fbbf24'; // Yellow
+                    width = 2;
+                    dashArray = '2,2'; // Dotted for casual friends
+                } else {
+                    // Fallback based on raw affinity
+                    if (rel.affinity < 0) {
+                        color = '#c9564c';
+                    }
+                }
 
                 return (
                     <line 
@@ -191,6 +221,7 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                         strokeWidth={width}
                         strokeOpacity={opacity}
                         strokeLinecap="round"
+                        strokeDasharray={dashArray}
                     />
                 );
             })}
@@ -205,7 +236,7 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
         {grid}
       </div>
       <div className="mt-2 text-xs text-center text-stone-500 font-mono">
-        村庄监控
+        关系图: 粉色-情缘, 蓝色-师徒, 绿色-亲友, 红色-死敌
       </div>
     </div>
   );
