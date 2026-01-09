@@ -82,6 +82,8 @@ const App: React.FC = () => {
                         intelInventory={engine.gameState.intelInventory}
                         selectedNPC={selectedNPC}
                         onPerformAction={engine.performAction}
+                        onUndo={engine.undoLastAction}
+                        canUndo={engine.canUndo}
                         isSimulating={engine.gameState.isSimulating || !!engine.gameState.gameOutcome}
                     />
                 </div>

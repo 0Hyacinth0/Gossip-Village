@@ -81,7 +81,7 @@ export const useGameEngine = () => {
     try {
         const rawNPCs = await generateVillage(6);
         
-        // Map & Position Logic (Simplified for brevity, same logic as before)
+        // Map & Position Logic
         const newGridMap = JSON.parse(JSON.stringify(LOCATION_MAP));
         const availableSlots = [];
         for(let y=0; y<4; y++) for(let x=0; x<4; x++) availableSlots.push({x,y});
@@ -114,7 +114,6 @@ export const useGameEngine = () => {
                 else if (householdKey === 'DOCTOR') locName = '回春堂';
                 else if (householdKey === 'GROCER') locName = '杂货铺';
                 else if (householdKey === 'HUNTER') locName = '猎户小屋';
-                // ... (simplified generic fallbacks for brevity)
                 newGridMap[pos.y][pos.x] = locName;
             }
             return { ...npc, position: pos };
@@ -163,7 +162,10 @@ export const useGameEngine = () => {
     let targetNPC = null;
     if (targetId) {
         targetNPC = gameState.npcs.find(n => n.id === targetId);
-        targetDisplay = targetNPC ? targetNPC.name : '未知目标';
+        // If it's NOT broadcast, we show the specific name. If it IS broadcast, it remains '全体村民'.
+        if (type !== 'BROADCAST') {
+            targetDisplay = targetNPC ? targetNPC.name : '未知目标';
+        }
     }
 
     // Interrogation Logic
@@ -213,6 +215,46 @@ export const useGameEngine = () => {
     }));
     setPendingActions(prev => [...prev, { type, content, targetId }]);
   }, [gameState.day, gameState.actionPoints, gameState.npcs]);
+
+  const undoLastAction = useCallback(() => {
+    if (pendingActions.length === 0) return;
+    
+    // Get the last action to reconstruct its log message
+    const lastAction = pendingActions[pendingActions.length - 1];
+    
+    // Remove from pending queue
+    setPendingActions(prev => prev.slice(0, -1));
+
+    setGameState(prev => {
+        const typeCN: Record<string, string> = {
+            'WHISPER': '私信', 'BROADCAST': '广播', 'FABRICATE': '伪造', 'INCEPTION': '托梦'
+        };
+        
+        // Reconstruct the exact log string to find and remove it
+        let targetDisplay = '全体村民';
+        if (lastAction.type !== 'BROADCAST' && lastAction.targetId) {
+             const t = prev.npcs.find(n => n.id === lastAction.targetId);
+             targetDisplay = t ? t.name : '未知目标';
+        }
+        
+        const logContentToMatch = `玩家对 【${targetDisplay}】 执行了 ${typeCN[lastAction.type]}: "${lastAction.content}"。`;
+        
+        // Find the index of the *last* matching log entry (to avoid removing earlier identical actions if any)
+        const logIndex = prev.logs.map(l => l.content).lastIndexOf(logContentToMatch);
+        
+        let newLogs = prev.logs;
+        if (logIndex !== -1) {
+             newLogs = prev.logs.filter((_, i) => i !== logIndex);
+        }
+
+        // Refund 1 AP (All pending actions cost 1)
+        return {
+            ...prev,
+            actionPoints: Math.min(MAX_AP_PER_DAY, prev.actionPoints + 1),
+            logs: newLogs
+        };
+    });
+  }, [pendingActions]);
 
   const endDay = async () => {
     if (gameState.gameOutcome) {
@@ -322,6 +364,8 @@ export const useGameEngine = () => {
     errorMsg,
     startGame,
     performAction,
+    undoLastAction,
+    canUndo: pendingActions.length > 0,
     endDay,
     closeNewspaper,
     interactionResult,

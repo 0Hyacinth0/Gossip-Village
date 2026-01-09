@@ -7,6 +7,8 @@ interface ActionPanelProps {
   intelInventory: IntelCard[];
   selectedNPC: NPC | null;
   onPerformAction: (type: ActionType, content: string, targetId?: string) => void;
+  onUndo: () => void;
+  canUndo: boolean;
   isSimulating: boolean;
 }
 
@@ -15,6 +17,8 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
   intelInventory, 
   selectedNPC, 
   onPerformAction,
+  onUndo,
+  canUndo,
   isSimulating 
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -60,7 +64,16 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
         <h3 className="text-lg font-bold text-retro-accent font-mono uppercase tracking-widest">
             情报注入协议
         </h3>
-        <div className="flex space-x-1">
+        <div className="flex space-x-1 items-center">
+          {canUndo && (
+              <button 
+                  onClick={onUndo}
+                  disabled={isSimulating}
+                  className="mr-3 text-[10px] underline text-stone-500 hover:text-retro-red disabled:opacity-50"
+              >
+                  撤销
+              </button>
+          )}
           {[...Array(3)].map((_, i) => (
             <div 
               key={i} 
