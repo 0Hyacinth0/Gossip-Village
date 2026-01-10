@@ -26,7 +26,7 @@ async function runWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000):
 
 // --- Helper Types for AI Responses ---
 
-interface SimulationResponse {
+export interface SimulationResponse {
   logs: { npcName: string; thought: string; action: string }[];
   relationshipUpdates: { sourceName: string; targetName: string; affinityChange: number; trustChange: number; newType?: string }[];
   statUpdates: { npcName: string; hpChange: number; mpChange: number; sanChange: number }[];
@@ -36,11 +36,11 @@ interface SimulationResponse {
   gameOutcome?: { result: 'Victory' | 'Defeat'; reason: string };
 }
 
-interface InitializationResponse {
+export interface InitializationResponse {
   npcs: any[];
 }
 
-interface InteractionResponse {
+export interface InteractionResponse {
   reply: string;
   revealedInfo: string | null; // If they reveal a secret, put it here
   moodChange: string;
