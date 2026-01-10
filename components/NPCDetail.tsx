@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NPC, RelationshipType } from '../types';
 import { STATUS_MAP } from '../constants';
 
@@ -18,6 +18,8 @@ const RELATIONSHIP_TYPE_MAP: Record<string, string> = {
 };
 
 const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
+  const [showBackstory, setShowBackstory] = useState(false);
+
   if (!npc) {
     return (
       <div className="h-full flex items-center justify-center text-stone-600 font-mono text-xs">
@@ -51,7 +53,7 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
   );
 
   return (
-    <div className="p-4 font-mono text-sm space-y-4">
+    <div className="p-4 font-mono text-sm space-y-4 relative h-full flex flex-col">
       <div className="border-b border-retro-border pb-2 mb-2">
         <h2 className="text-xl font-bold text-retro-accent flex items-center justify-between">
             {npc.name}
@@ -93,6 +95,14 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
         <p className="text-stone-300 bg-stone-900/50 p-2 border-l-2 border-retro-red">{npc.deepSecret}</p>
       </div>
 
+      {/* Backstory Button */}
+      <button 
+        onClick={() => setShowBackstory(true)}
+        className="w-full py-2 bg-stone-800 border border-stone-600 text-stone-300 hover:text-retro-accent hover:border-retro-accent transition-colors flex items-center justify-center gap-2"
+      >
+        <span>📜</span> 查看生平往事
+      </button>
+
       <div>
         <h3 className="text-retro-text text-xs uppercase font-bold mb-1">当前状态</h3>
         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -114,9 +124,9 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
       </div>
 
       {/* Relationships Mini View */}
-      <div>
+      <div className="flex-1 overflow-hidden flex flex-col">
          <h3 className="text-retro-text text-xs uppercase font-bold mb-1">人际关系</h3>
-         <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+         <div className="space-y-1 overflow-y-auto pr-1 flex-1">
             {npc.relationships.length === 0 && <span className="text-stone-600 italic text-xs">暂无重要关系。</span>}
             {npc.relationships.map((rel, idx) => {
                 const typeCN = RELATIONSHIP_TYPE_MAP[rel.type] || rel.type;
@@ -148,6 +158,33 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
             })}
          </div>
       </div>
+
+      {/* Backstory Modal/Overlay */}
+      {showBackstory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-[#e8e4d9] text-[#1a1815] w-full max-w-md max-h-[80vh] overflow-y-auto rounded-sm border-4 border-[#2b2724] shadow-2xl relative flex flex-col">
+                <button 
+                    onClick={() => setShowBackstory(false)}
+                    className="absolute top-2 right-2 text-2xl font-bold leading-none hover:text-retro-red w-8 h-8 flex items-center justify-center"
+                >
+                    &times;
+                </button>
+                
+                <div className="p-6 pb-2 border-b border-[#1a1815]/20">
+                    <h3 className="text-2xl font-serif font-black mb-1">{npc.name}</h3>
+                    <div className="text-xs text-[#5d5750] font-bold uppercase tracking-widest">生平往事 · 绝密卷宗</div>
+                </div>
+                
+                <div className="p-6 font-serif text-base leading-relaxed text-justify whitespace-pre-wrap">
+                    {npc.backstory || "暂无记录。"}
+                </div>
+
+                <div className="p-4 bg-[#d6cfc7] border-t border-[#1a1815]/20 text-center">
+                    <span className="text-xs font-bold text-[#5d5750]">稻香村情报网 · 绝密</span>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

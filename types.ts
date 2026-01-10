@@ -23,6 +23,7 @@ export interface NPC {
   role: string; // e.g., "Village Chief", "Baker"
   publicPersona: string;
   deepSecret: string; // Known only to God (Player) and self initially
+  backstory: string; // Detailed past history and personality origin
   lifeGoal: string; // What they ultimately want to achieve
   relationships: Relationship[];
   currentMood: string;

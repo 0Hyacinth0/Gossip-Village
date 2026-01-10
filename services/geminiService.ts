@@ -54,7 +54,7 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
     Generate ${villagerCount} unique, complex characters for a high-stakes Wuxia drama game.
     The setting is "Rice Fragrance Village" (稻香村).
     
-    Current Task: Create initial NPC data, including their social web, location, and RPG Stats.
+    Current Task: Create initial NPC data, including their social web, location, RPG Stats, and a DETAILED BACKSTORY.
     
     **CRITICAL DESIGN INSTRUCTIONS:**
     1. **Conflict & Connection**: Ensure some NPCs are *already* connected via 'initialConnectionName'.
@@ -71,8 +71,9 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
          * High (40-60): Cultists (Ming Jiao/Five Venoms), spies, or those with tragic/guilty secrets.
          * Medium (10-30): Ambitious characters, those with grudges.
          * Low (0-9): Pure-hearted, monks, naive youths.
-    3. **Spawn Zone**: Assign a 'spawnZone' strictly based on their role.
-    4. **Roles**: Use JX3 sects or classic Wuxia roles.
+    3. **Backstory**: Create a rich history (100-150 words) explaining their past, trauma, sect origins, or why they are in this village.
+    4. **Spawn Zone**: Assign a 'spawnZone' strictly based on their role.
+    5. **Roles**: Use JX3 sects or classic Wuxia roles.
     
     Language Requirement: 
     - 'gender': 'Male' or 'Female'.
@@ -103,6 +104,7 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
                   role: { type: Type.STRING },
                   publicPersona: { type: Type.STRING },
                   deepSecret: { type: Type.STRING },
+                  backstory: { type: Type.STRING },
                   lifeGoal: { type: Type.STRING },
                   currentMood: { type: Type.STRING },
                   hp: { type: Type.INTEGER },
@@ -112,7 +114,7 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
                   initialConnectionName: { type: Type.STRING, nullable: true },
                   initialConnectionType: { type: Type.STRING, enum: ['Lover', 'Enemy', 'Master', 'Disciple', 'Family'], nullable: true }
                 },
-                required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'lifeGoal', 'currentMood', 'spawnZone', 'hp', 'mp', 'san']
+                required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'backstory', 'lifeGoal', 'currentMood', 'spawnZone', 'hp', 'mp', 'san']
               }
             }
           }
@@ -143,6 +145,7 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
       Roleplay Simulation (High Drama Wuxia).
       
       You are: ${npc.name} (${npc.role}).
+      Backstory: ${npc.backstory}.
       Secret: ${npc.deepSecret}.
       Current State: ${npc.status}.
       Stats: HP ${npc.hp}, Martial ${npc.mp}, Corruption ${npc.san}.
