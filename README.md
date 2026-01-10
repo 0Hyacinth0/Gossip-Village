@@ -41,7 +41,7 @@
 
 ```bash
 # 1. 克隆代码并进入目录
-git clone <your-repo-url>
+git clone https://github.com/0Hyacinth0/Gossip-Village.git
 cd gossip-village
 
 # 2. 赋予脚本执行权限
@@ -81,7 +81,7 @@ module.exports = {
   apps: [{
     name: "gossip-village",
     script: "npx",
-    args: "serve -s dist -l 3000", // 修改此处端口 (-l 8080)
+    args: "serve -s dist -l 3000",
     // ...
   }]
 };
@@ -105,7 +105,7 @@ export const API_CONFIG = {
   modelId: 'deepseek-chat',
   
   // API Base URL
-  baseUrl: '[https://api.deepseek.com](https://api.deepseek.com)',
+  baseUrl: 'https://api.deepseek.com',
   
   // ...
 };
