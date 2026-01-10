@@ -13,11 +13,13 @@ import StartScreen from './components/StartScreen';
 import InteractionResultModal from './components/InteractionResultModal';
 import GameOverModal from './components/GameOverModal';
 import TimeDisplay from './components/TimeDisplay';
+import SupportModal from './components/SupportModal';
 
 const App: React.FC = () => {
   // Use the custom hook for all logic
   const engine = useGameEngine();
   const [selectedMode, setSelectedMode] = useState<GameMode>('Matchmaker');
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
 
   // --- Start Screen ---
   if (!engine.hasStarted) {
@@ -52,23 +54,35 @@ const App: React.FC = () => {
                     </span>
                 )}
             </div>
-            <button 
-                onClick={engine.endDay}
-                disabled={engine.gameState.isSimulating}
-                className={`px-5 py-2 text-xs font-bold uppercase transition-all rounded shadow-lg disabled:opacity-50 disabled:shadow-none
-                    ${engine.gameState.gameOutcome 
-                        ? 'bg-white text-retro-bg hover:bg-stone-200 animate-pulse border-2 border-retro-text' 
-                        : 'bg-retro-accent text-retro-bg border-2 border-retro-accent hover:bg-retro-text hover:border-retro-text'
+
+            <div className="flex items-center gap-3">
+                {/* Support Button */}
+                <button 
+                    onClick={() => setIsSupportOpen(true)}
+                    className="hidden sm:flex items-center gap-1 text-[10px] text-stone-500 hover:text-retro-accent border border-stone-700 hover:border-retro-accent px-2 py-1.5 rounded transition-all"
+                    title="支持开发者"
+                >
+                    <span>💖</span> 支持开发者
+                </button>
+
+                <button 
+                    onClick={engine.endDay}
+                    disabled={engine.gameState.isSimulating}
+                    className={`px-5 py-2 text-xs font-bold uppercase transition-all rounded shadow-lg disabled:opacity-50 disabled:shadow-none
+                        ${engine.gameState.gameOutcome 
+                            ? 'bg-white text-retro-bg hover:bg-stone-200 animate-pulse border-2 border-retro-text' 
+                            : 'bg-retro-accent text-retro-bg border-2 border-retro-accent hover:bg-retro-text hover:border-retro-text'
+                        }
+                    `}
+                >
+                    {engine.gameState.isSimulating 
+                        ? '推演中...' 
+                        : engine.gameState.gameOutcome 
+                            ? '🏆 查看结局' 
+                            : '推进时辰 >>'
                     }
-                `}
-            >
-                {engine.gameState.isSimulating 
-                    ? '推演中...' 
-                    : engine.gameState.gameOutcome 
-                        ? '🏆 查看结局' 
-                        : '推进时辰 >>'
-                }
-            </button>
+                </button>
+            </div>
         </div>
 
         {/* Main Grid */}
@@ -118,6 +132,8 @@ const App: React.FC = () => {
             result={engine.interactionResult} 
             onClose={() => engine.setInteractionResult(null)} 
         />
+        
+        <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
 
         {/* Only show Game Over if Newspaper is closed */}
         {!engine.gameState.lastNewspaper && (

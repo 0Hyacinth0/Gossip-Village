@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GameMode } from '../types';
+import SupportModal from './SupportModal';
 
 interface StartScreenProps {
   selectedMode: GameMode;
@@ -17,8 +18,19 @@ const StartScreen: React.FC<StartScreenProps> = ({
   isSimulating, 
   errorMsg 
 }) => {
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-retro-bg text-retro-text flex flex-col items-center justify-center p-4 font-mono relative">
+      
+      {/* Support Button (Top Right) */}
+      <button 
+        onClick={() => setIsSupportOpen(true)}
+        className="absolute top-4 right-4 px-3 py-1 border border-retro-accent text-retro-accent text-xs font-bold hover:bg-retro-accent hover:text-retro-bg transition-colors flex items-center gap-2"
+      >
+        <span>💖</span> 支持开发者
+      </button>
+
       <h1 className="text-6xl text-retro-accent mb-4 font-bold tracking-tighter">八卦稻香村</h1>
       <h2 className="text-2xl mb-8 text-stone-500 uppercase tracking-widest">Gossip Village</h2>
       
@@ -59,6 +71,8 @@ const StartScreen: React.FC<StartScreenProps> = ({
       <div className="absolute bottom-4 text-[10px] text-stone-700 font-mono tracking-widest opacity-60">
         v0.9.6 "Mirage"
       </div>
+
+      <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
     </div>
   );
 };
