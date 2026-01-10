@@ -12,11 +12,8 @@ echo "=== Gossip Village 实时日志查看 ==="
 echo "按 Ctrl+C 退出日志查看"
 echo ""
 
-# 检查日志目录是否存在
-if [ ! -d "$LOG_DIR" ]; then
-    echo "警告: 日志目录不存在，正在创建..."
-    mkdir -p "$LOG_DIR"
-fi
+# 确保日志目录存在
+mkdir -p "$LOG_DIR"
 
 # 检查PM2是否安装
 if ! command -v pm2 &> /dev/null; then

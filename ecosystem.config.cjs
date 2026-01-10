@@ -1,13 +1,12 @@
 module.exports = {
   apps: [{
     name: 'gossip-village',
-    script: 'npm',
-    args: 'run preview',
+    script: 'serve',
+    args: '-s dist -l 3000',
     cwd: '.',
     interpreter: 'none',
     env: {
-      NODE_ENV: 'production',
-      PORT: 3000
+      NODE_ENV: 'production'
     },
     log_date_format: 'YYYY-MM-DD HH:mm:ss',
     out_file: './logs/out.log',

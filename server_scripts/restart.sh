@@ -49,8 +49,25 @@ if [ $? -ne 0 ]; then
 fi
 echo ""
 
-# 4. 重启应用程序
-echo "=== 4. 重启应用程序 ==="
+# 4. 确保日志目录存在
+echo "=== 4. 确保日志目录存在 ==="
+mkdir -p "$WORK_DIR/logs"
+echo ""
+
+# 5. 检查serve是否安装
+echo "=== 5. 检查serve依赖 ==="
+if ! command -v serve &> /dev/null; then
+    echo "安装 serve 依赖..."
+    npm install -g serve
+    if [ $? -ne 0 ]; then
+        echo "警告: serve 安装失败，尝试使用 pm2-serve..."
+        npm install -g pm2-serve
+    fi
+    echo ""
+fi
+
+# 6. 重启应用程序
+echo "=== 6. 重启应用程序 ==="
 # 检查应用是否在运行
 if pm2 status gossip-village &> /dev/null; then
     echo "重启应用程序..."

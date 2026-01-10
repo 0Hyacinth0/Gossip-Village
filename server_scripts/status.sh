@@ -39,6 +39,14 @@ else
 fi
 
 echo ""
+echo "=== 访问信息 ==="
+# 获取服务器IP地址
+SERVER_IP=$(hostname -I | awk '{print $1}')
+PORT="3000"
+echo "访问地址: http://$SERVER_IP:$PORT"
+echo "本地访问: http://localhost:$PORT"
+
+echo ""
 echo "=== 命令提示 ==="
 echo "启动应用: ./server_scripts/start.sh"
 echo "停止应用: ./server_scripts/stop.sh"

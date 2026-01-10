@@ -33,6 +33,22 @@ if ! command -v pm2 &> /dev/null; then
     echo ""
 fi
 
+# 检查serve是否安装
+if ! command -v serve &> /dev/null; then
+    echo "=== 安装 serve 依赖 ==="
+    npm install -g serve
+    if [ $? -ne 0 ]; then
+        echo "错误: serve 安装失败，请检查网络连接和权限"
+        echo "尝试使用 pm2-serve..."
+        npm install -g pm2-serve
+        if [ $? -ne 0 ]; then
+            echo "错误: 无法安装 serve 或 pm2-serve，应用可能无法正常启动"
+            exit 1
+        fi
+    fi
+    echo ""
+fi
+
 # 1. 安装依赖
 echo "=== 1. 安装应用程序依赖 ==="
 npm install
@@ -63,16 +79,26 @@ else
 fi
 echo ""
 
-# 4. 设置PM2开机自启
-echo "=== 4. 配置PM2开机自启 ==="
+# 4. 确保日志目录存在
+echo "=== 4. 确保日志目录存在 ==="
+mkdir -p "$WORK_DIR/logs"
+echo ""
+
+# 5. 设置PM2开机自启
+echo "=== 5. 配置PM2开机自启 ==="
 pm2 startup
 pm2 save
 echo ""
 
-# 5. 显示应用程序状态
-echo "=== 5. 应用程序状态 ==="
+# 6. 显示应用程序状态
+echo "=== 6. 应用程序状态 ==="
 echo "应用名称: gossip-village"
-echo "访问地址: http://localhost:8080"
+
+# 获取服务器IP地址
+SERVER_IP=$(hostname -I | awk '{print $1}')
+PORT="3000"
+echo "访问地址: http://$SERVER_IP:$PORT"
+echo "本地访问: http://localhost:$PORT"
 echo ""
 
 # 显示详细状态信息

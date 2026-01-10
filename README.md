@@ -15,6 +15,7 @@
 1.  **安装依赖**
     ```bash
     npm install
+    npm install -g serve
     ```
 
 2.  **配置环境**
