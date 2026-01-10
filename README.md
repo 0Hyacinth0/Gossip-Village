@@ -3,14 +3,14 @@
 
 一款基于 AI Agent 的江湖模拟游戏。你作为隐形的观察者，通过散布信息操控村民的关系与命运。
 
-## 🛠 技术栈
+## 技术栈
 
 *   **Frontend**: React 19, TypeScript, TailwindCSS
 *   **AI**: Google Gemini API (默认) 或 OpenAI 兼容接口 (DeepSeek 等)
 *   **Build**: Vite
 *   **Deployment**: PM2 + Serve
 
-## 🚀 快速开始 (本地开发)
+## 快速开始 (本地开发)
 
 1.  **安装依赖**
     ```bash
@@ -30,7 +30,7 @@
     npm run dev
     ```
 
-## 🌍 服务器部署指南 (Linux/Mac)
+## 服务器部署指南 (Linux/Mac)
 
 本项目提供了一套完整的脚本，用于在服务器上后台运行、监控和维护。
 
@@ -83,7 +83,7 @@ module.exports = {
 };
 ```
 
-## 🧩 模型切换
+## 模型切换
 
 本项目支持无痛切换大模型（如从 Gemini 切换到 DeepSeek）。
 
@@ -106,7 +106,7 @@ export const API_CONFIG = {
 
 修改完成后，执行 `./server_scripts/restart.sh` 生效。
 
-## ⚠️ 常见问题
+## 常见问题
 
 **Q: 启动后网页白屏？**
 A: 
