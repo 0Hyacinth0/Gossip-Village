@@ -193,7 +193,8 @@ export const useGameEngine = () => {
         setGameState(prev => {
             // Process logic via utility
             const processed = processSimulationResults(
-                prev.npcs, 
+                prev.npcs,
+                prev.intelInventory, // PASS CURRENT INTEL
                 result, 
                 prev.day, 
                 prev.timePhase

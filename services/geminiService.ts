@@ -224,29 +224,26 @@ export const simulateDay = async (
        - IF 'Enemy' or 'QiDeviated' NPCs are in the **same location**, a fight MUST break out.
        - **Winner Calculation**: (Attacker MP + random 1-20) vs (Defender MP + random 1-20).
        - **Consequences**:
-         - **Loser**: HP -25 (Major Injury). Status -> 'Injured' if HP < 20. Gains MP +1 (Learns from defeat).
-         - **Winner**: MP +3 (Combat Experience). HP -5 (Minor scratch).
-         - **Spectators**: SAN +10 (Witnessing violence).
+         - **Loser**: HP -25 (Major Injury). Status -> 'Injured' if HP < 20. Gains MP +1. SAN +5 (Humiliation).
+         - **Winner**: MP +3 (Experience). HP -5. SAN -2 (Confidence Boost).
+         - **Spectators**: SAN +2 (Witnessing violence).
     
     2. **GROWTH & TRAINING (MP Gain)**:
        - **Training**: If an NPC is at '演武场' (Martial Field), '后山密洞' (Secret Cave), or '芦苇荡' (Reeds) during Morning/Afternoon, they should Train.
        - **Effect**: MP +3 to +5. 
-       - **Action Log**: "Practicing swordsmanship", "Meditating on secret arts".
     
     3. **HEALTH & INJURY SYSTEM**:
-       - **Injured (HP < 20)**: 
-         - BEHAVIOR: Cannot attack. Must seek 'Temple'/'Doctor' to heal, or hide in 'Secluded'.
-         - ACTION: "Coughs blood", "Limps away", "Meditates to heal".
-         - If attacked while Injured -> HP drops to 0 -> **DEAD**.
+       - **Injured (HP < 20)**: Cannot attack. Must seek 'Temple'/'Doctor'.
        - **Healing**: An 'Injured' NPC in 'Temple' or 'Doctor's House' gains HP +15.
     
     4. **CORRUPTION (SAN)**:
-       - **SAN > 80**: Status -> 'QiDeviated'. BEHAVIOR: Attacks nearest person regardless of relationship.
-       - **SAN > 95**: Self-destruction or public massacre.
+       - **REST & RECOVERY**: If an NPC is engaged in peaceful activities (Drinking at Tavern, Resting at Home, Meditating at Temple) and NOT fighting, **SAN -5**.
+       - **SAN > 90**: Status -> 'QiDeviated'. BEHAVIOR: Attacks nearest person.
+       - **SAN > 95**: Self-destruction or massacre.
     
     **OUTPUT REQUIREMENTS:**
-    - **statUpdates**: Return strictly calculated changes (e.g., hpChange: -30, mpChange: +5).
-    - **logs**: Describe the fight or training.
+    - **statUpdates**: Return strictly calculated changes (e.g., hpChange: -30, mpChange: +5, sanChange: -5).
+    - **logs**: Describe the events.
     - **npcStatusUpdates**: Update Status based on logic.
     - **newspaper**: Generate only for Deaths or Massacres.
 

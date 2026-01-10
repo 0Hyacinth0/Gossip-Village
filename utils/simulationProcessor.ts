@@ -14,6 +14,7 @@ interface ProcessResult {
 
 export const processSimulationResults = (
     currentNPCs: NPC[],
+    currentIntel: IntelCard[], // Added parameter for deduplication
     result: SimulationResponse,
     currentDay: number,
     currentTimePhase: TimePhase
@@ -28,14 +29,24 @@ export const processSimulationResults = (
         type: l.thought ? 'Thought' : 'Action'
     }));
 
-    // Process Intel
-    const newIntel: IntelCard[] = result.newIntel.map(i => ({
-        id: `intel-${Date.now()}-${Math.random()}`,
-        type: 'Rumor',
-        content: i.content,
-        timestamp: currentDay,
-        sourceId: 'simulation'
-    }));
+    // Process Intel with Deduplication
+    const existingContentSet = new Set(currentIntel.map(i => i.content));
+    const newIntel: IntelCard[] = [];
+    const seenInBatch = new Set<string>();
+
+    for (const item of result.newIntel) {
+        // Filter out duplicates that exist in history or appeared earlier in this batch
+        if (!existingContentSet.has(item.content) && !seenInBatch.has(item.content)) {
+            newIntel.push({
+                id: `intel-${Date.now()}-${Math.random()}`,
+                type: 'Rumor',
+                content: item.content,
+                timestamp: currentDay,
+                sourceId: 'simulation'
+            });
+            seenInBatch.add(item.content);
+        }
+    }
 
     // Process NPCs
     const updatedNPCs = currentNPCs.map(npc => {
@@ -106,11 +117,11 @@ export const processSimulationResults = (
                 newHp = 0;
             } else if (newHp < 20) {
                 computedStatus = 'Injured';
-            } else if (newSan > 80) {
+            } else if (newSan >= 90) { // Threshold raised from 80 to 90
                 computedStatus = 'QiDeviated';
             } else if (computedStatus === 'Injured' && newHp >= 20) {
                 computedStatus = 'Normal';
-            } else if (computedStatus === 'QiDeviated' && newSan < 80) {
+            } else if (computedStatus === 'QiDeviated' && newSan < 80) { // Recover buffer
                 computedStatus = 'Normal';
             }
         }
