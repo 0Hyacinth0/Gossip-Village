@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { GameMode } from './types';
+import { TIME_PHASE_MAP } from './constants';
 
 // Components
 import VillageMap from './components/VillageMap';
@@ -31,16 +33,19 @@ const App: React.FC = () => {
   }
 
   const selectedNPC = engine.gameState.npcs.find(n => n.id === engine.selectedNPCId) || null;
+  const timeLabel = TIME_PHASE_MAP[engine.gameState.timePhase];
 
   return (
     <div className="h-screen bg-retro-bg text-retro-text font-mono flex flex-col overflow-hidden relative">
         {/* Top Bar */}
         <div className="h-12 border-b border-retro-border flex items-center justify-between px-4 bg-retro-panel z-10 shrink-0">
             <div className="flex items-center gap-4">
-                <span className="text-retro-accent font-bold">八卦稻香村</span>
-                <span className="text-xs text-stone-500">第 {engine.gameState.day} 天</span>
+                <span className="text-retro-accent font-bold hidden sm:block">八卦稻香村</span>
+                <span className="text-xs text-stone-400 font-bold border-l border-r border-stone-600 px-3">
+                    第{engine.gameState.day}天 · {timeLabel}
+                </span>
                 {engine.gameState.objective && (
-                    <span className="text-xs text-retro-text bg-stone-800 px-2 py-1 rounded border border-stone-600 truncate max-w-[200px] md:max-w-md" title={engine.gameState.objective.description}>
+                    <span className="text-xs text-retro-text bg-stone-800 px-2 py-1 rounded border border-stone-600 truncate max-w-[150px] md:max-w-md" title={engine.gameState.objective.description}>
                         🎯 {engine.gameState.objective.description}
                     </span>
                 )}
@@ -59,7 +64,7 @@ const App: React.FC = () => {
                     ? '推演中...' 
                     : engine.gameState.gameOutcome 
                         ? '🏆 查看结局' 
-                        : '结束今天 >>'
+                        : '推进时辰 >>'
                 }
             </button>
         </div>

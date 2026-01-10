@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NPC, Relationship } from '../types';
 import { STATUS_MAP } from '../constants';
@@ -72,6 +73,9 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                     const isJailed = npc.status === 'Jailed';
                     const hasLeft = npc.status === 'Left Village' || npc.status === 'Escaped';
                     const isHeartbroken = npc.status === 'Heartbroken';
+                    const isQiDeviated = npc.status === 'QiDeviated';
+                    const isInjured = npc.status === 'Injured';
+                    
                     const isInactive = isDead || isJailed || hasLeft || isHeartbroken;
 
                     let emoji = '😶';
@@ -79,6 +83,8 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                     else if (isJailed) emoji = '⛓️';
                     else if (hasLeft) emoji = '💨';
                     else if (isHeartbroken) emoji = '💔';
+                    else if (isQiDeviated) emoji = '👹'; // Demon/Ogre mask for frenzy
+                    else if (isInjured) emoji = '🤕';
                     else emoji = npc.gender === 'Male' ? '👨🏻' : '👩🏻';
 
                     // Dynamic styling based on crowding
@@ -117,6 +123,8 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                                 ${isSelected ? 'border-retro-accent bg-retro-panel' : `${relationColor} hover:bg-stone-800`}
                                 ${hasLeft ? 'border-dashed border-stone-600 bg-black/40 opacity-40 grayscale' : ''}
                                 ${isDead || isJailed || isHeartbroken ? 'bg-stone-900 grayscale opacity-80' : ''}
+                                ${isQiDeviated ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse' : ''}
+                                ${isInjured ? 'border-red-800 bg-red-900/20' : ''}
                                 ${containerPadding}
                             `}
                         >
@@ -236,7 +244,7 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
         {grid}
       </div>
       <div className="mt-2 text-xs text-center text-stone-500 font-mono">
-        关系图: 粉色-情缘, 蓝色-师徒, 绿色-亲友, 红色-死敌
+        关系图: 粉色-情缘, 蓝色-师徒, 绿色-亲友, 红色-死敌, 紫色发光-走火入魔
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NPC, RelationshipType } from '../types';
 import { STATUS_MAP } from '../constants';
@@ -28,23 +29,50 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
   const isDead = npc.status === 'Dead';
   const isHeartbroken = npc.status === 'Heartbroken';
   const isEscaped = npc.status === 'Escaped';
+  const isQiDeviated = npc.status === 'QiDeviated';
+  const isInjured = npc.status === 'Injured';
   
-  // Use map or fallback to original string
   const statusCN = STATUS_MAP[npc.status] || npc.status;
+
+  // Stat Bar Helper
+  const StatBar = ({ label, value, colorClass, max = 100 }: { label: string, value: number, colorClass: string, max?: number }) => (
+    <div className="flex flex-col text-xs mb-2">
+      <div className="flex justify-between mb-1">
+        <span className="text-stone-400">{label}</span>
+        <span className="font-mono text-retro-text">{value}/{max}</span>
+      </div>
+      <div className="w-full h-2 bg-stone-800 rounded overflow-hidden">
+        <div 
+            className={`h-full transition-all duration-500 ${colorClass}`} 
+            style={{ width: `${Math.min(100, (value / max) * 100)}%` }}
+        ></div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-4 font-mono text-sm space-y-4">
       <div className="border-b border-retro-border pb-2 mb-2">
         <h2 className="text-xl font-bold text-retro-accent flex items-center justify-between">
             {npc.name}
-            {isDead && <span className="text-retro-red text-xs border border-retro-red px-1">已死亡</span>}
-            {isHeartbroken && <span className="text-purple-400 text-xs border border-purple-400 px-1">心碎</span>}
-            {isEscaped && <span className="text-orange-400 text-xs border border-orange-400 px-1">已逃亡</span>}
+            <div className="flex gap-1">
+                {isDead && <span className="text-retro-red text-[10px] border border-retro-red px-1">已死亡</span>}
+                {isQiDeviated && <span className="text-purple-500 text-[10px] border border-purple-500 px-1 animate-pulse">走火入魔</span>}
+                {isInjured && <span className="text-orange-500 text-[10px] border border-orange-500 px-1">重伤</span>}
+            </div>
         </h2>
         <div className="flex justify-between text-stone-400 text-xs mt-1">
           <span>{npc.role}</span>
-          <span>年龄: {npc.age}</span>
+          <span>{npc.gender === 'Male' ? '男' : '女'} / {npc.age}岁</span>
         </div>
+      </div>
+      
+      {/* RPG Stats Section */}
+      <div className="bg-black/20 p-2 rounded border border-white/5">
+        <h3 className="text-retro-text text-xs uppercase font-bold mb-2">基础属性</h3>
+        <StatBar label="气血 (HP)" value={npc.hp} colorClass="bg-retro-red" />
+        <StatBar label="武力 (MP)" value={npc.mp} colorClass="bg-retro-accent" />
+        <StatBar label="入魔 (SAN)" value={npc.san} colorClass="bg-purple-600" />
       </div>
 
       <div>
@@ -76,8 +104,8 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
                 <span className="text-stone-500">状态</span>
                 <span className={
                     npc.status === 'Normal' ? 'text-retro-green' : 
-                    npc.status === 'Heartbroken' ? 'text-purple-400' :
-                    npc.status === 'Escaped' ? 'text-orange-400' :
+                    isQiDeviated ? 'text-purple-500 font-bold' :
+                    isDead ? 'text-stone-500' :
                     'text-retro-accent'
                 }>{statusCN}</span>
             </div>

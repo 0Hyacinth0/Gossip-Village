@@ -26,7 +26,12 @@ export interface NPC {
   lifeGoal: string; // What they ultimately want to achieve
   relationships: Relationship[];
   currentMood: string;
-  status: 'Normal' | 'Agitated' | 'Depressed' | 'Left Village' | 'Married' | 'Dead' | 'Jailed' | 'Heartbroken' | 'Escaped';
+  // New RPG Stats
+  hp: number; // Health: 0-100 (0 = Dead)
+  mp: number; // Martial Power: 0-100 (Determines fight outcome)
+  san: number; // Corruption/Sanity: 0-100 (100 = Qi Deviation/Frenzy)
+  
+  status: 'Normal' | 'Agitated' | 'Depressed' | 'Left Village' | 'Married' | 'Dead' | 'Jailed' | 'Heartbroken' | 'Escaped' | 'QiDeviated' | 'Injured';
   position: { x: number; y: number }; // For the grid map
   
   // Generation metadata (optional)
@@ -45,6 +50,7 @@ export interface IntelCard {
 
 export interface LogEntry {
   day: number;
+  timePhase: TimePhase;
   npcId?: string;
   npcName?: string;
   content: string;
@@ -57,6 +63,7 @@ export interface DailyNews {
 }
 
 export type GameMode = 'Sandbox' | 'Chaos' | 'Matchmaker' | 'Detective';
+export type TimePhase = 'Morning' | 'Afternoon' | 'Evening' | 'Night';
 
 export interface GameObjective {
   mode: GameMode;
@@ -67,6 +74,7 @@ export interface GameObjective {
 
 export interface GameState {
   day: number;
+  timePhase: TimePhase; // New finer-grained time
   npcs: NPC[];
   intelInventory: IntelCard[];
   logs: LogEntry[];

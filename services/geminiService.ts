@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { NPC, GameState, DailyNews, LogEntry, IntelCard } from "../types";
 
@@ -28,6 +29,7 @@ async function runWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000):
 interface SimulationResponse {
   logs: { npcName: string; thought: string; action: string }[];
   relationshipUpdates: { sourceName: string; targetName: string; affinityChange: number; trustChange: number; newType?: string }[];
+  statUpdates: { npcName: string; hpChange: number; mpChange: number; sanChange: number }[];
   newIntel: { content: string; type: string; sourceName: string }[];
   newspaper: { headline: string; articles: string[] };
   npcStatusUpdates: { npcName: string; status: string; mood: string; newPosition?: {x: number, y: number} }[];
@@ -51,21 +53,16 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
     Generate ${villagerCount} unique, complex characters for a high-stakes Wuxia drama game.
     The setting is "Rice Fragrance Village" (稻香村).
     
-    Current Task: Create initial NPC data, including their social web and preferred location.
+    Current Task: Create initial NPC data, including their social web, location, and RPG Stats.
     
     **CRITICAL DESIGN INSTRUCTIONS:**
     1. **Conflict & Connection**: Ensure some NPCs are *already* connected. 
-       - Pairs of **Lovers** (情缘).
-       - Pairs of **Enemies** (死敌).
-       - **Master/Disciple** (师徒).
-       - Use 'initialConnectionName' and 'initialConnectionType' to define these.
-    2. **Spawn Zone**: Assign a 'spawnZone' based on their role:
-       - 'Market': Merchants, Innkeepers, Blacksmiths, Beggars.
-       - 'Official': Village Chief, Guards, Soldiers (Tian Ce).
-       - 'Temple': Monks (Shaolin), Taoists (Chun Yang), Doctors (Wan Hua).
-       - 'Secluded': Hermits, Assassins (Tang Sect), Cultists (Ming Jiao), Witches (Five Venoms).
-    3. **Roles**: Use JX3 sects or classic Wuxia roles.
-    4. **Volatile Secrets**: The "Deep Secret" must be dangerous.
+    2. **RPG Stats**:
+       - **HP (Health)**: 80-100 for warriors, 50-70 for civilians.
+       - **MP (Martial Power)**: 70-100 for Guards/Assassins/Sect Members. 0-20 for ordinary villagers.
+       - **SAN (Corruption/入魔值)**: 0-20 initially. Higher for villains or tragic characters.
+    3. **Spawn Zone**: Assign a 'spawnZone' based on their role.
+    4. **Roles**: Use JX3 sects or classic Wuxia roles.
     
     Language Requirement: 
     - 'gender': 'Male' or 'Female'.
@@ -98,11 +95,14 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
                   deepSecret: { type: Type.STRING },
                   lifeGoal: { type: Type.STRING },
                   currentMood: { type: Type.STRING },
+                  hp: { type: Type.INTEGER },
+                  mp: { type: Type.INTEGER },
+                  san: { type: Type.INTEGER },
                   spawnZone: { type: Type.STRING, enum: ['Market', 'Official', 'Temple', 'Secluded'] },
                   initialConnectionName: { type: Type.STRING, nullable: true },
                   initialConnectionType: { type: Type.STRING, enum: ['Lover', 'Enemy', 'Master', 'Disciple', 'Family'], nullable: true }
                 },
-                required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'lifeGoal', 'currentMood', 'spawnZone']
+                required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'lifeGoal', 'currentMood', 'spawnZone', 'hp', 'mp', 'san']
               }
             }
           }
@@ -112,12 +112,12 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
 
     const data = JSON.parse(response.text || "{}") as InitializationResponse;
     
-    // Post-process to add IDs and initial empty relationships (will be populated in game engine)
+    // Post-process
     return data.npcs.map((npc, index) => ({
       ...npc,
       id: `npc-${Date.now()}-${index}`,
       status: 'Normal',
-      position: { x: 0, y: 0 }, // Placeholder, will be set by Smart Placement
+      position: { x: 0, y: 0 }, 
       relationships: [] 
     }));
   });
@@ -135,22 +135,18 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
       You are: ${npc.name} (${npc.role}).
       Secret: ${npc.deepSecret}.
       Current State: ${npc.status}.
+      Stats: HP ${npc.hp}, Martial ${npc.mp}, Corruption ${npc.san}.
       Social Circle:
       ${relationshipsCtx || "None."}
 
       The Player (a mysterious inner voice or stranger) asks: "${question}"
       
       **Directives:**
-      1. **Relationship-Driven Tone (CRITICAL)**:
-         - If discussing a **Lover** (情缘): Voice is soft, protective, yearning. You would die for them.
-         - If discussing an **Enemy** (死敌/仇敌): Voice is cold, angry, mocking. You want them dead or ruined.
-         - If discussing a **Master/Disciple** (师徒): Voice is formal, respectful (if disciple) or stern/proud (if master).
-         - If discussing **Family** (亲眷): Voice is familiar, loyal, or deeply annoyed (family feud).
-      2. **Be Dramatic**: Do not be polite. If you are angry, scream. If you are sad, weep.
-      3. **React to Keywords**: 
-         - If the player mentions your *Secret*, panic or get defensive.
-      4. **Brevity**: Under 40 words.
-      5. **Language**: Simplified Chinese, Wuxia style.
+      1. **Tone**: Driven by relationships and current corruption (SAN). 
+         - If SAN > 60: Unstable, murmuring, violent thoughts.
+         - If SAN > 90 (QiDeviated): Completely insane.
+      2. **Brevity**: Under 40 words.
+      3. **Language**: Simplified Chinese, Wuxia style.
       
       Output JSON.
     `;
@@ -184,79 +180,63 @@ export const simulateDay = async (
   
   // Prepare context
   const npcSummaries = currentState.npcs.map(n => 
-    `ID:${n.id} Name:${n.name} (${n.role}) Status:${n.status} Mood:${n.currentMood} Secret:${n.deepSecret} Loc:(${n.position.x},${n.position.y})`
+    `[${n.name}|${n.role}] Status:${n.status} HP:${n.hp} MP(Martial):${n.mp} SAN(Corruption):${n.san} Loc:(${n.position.x},${n.position.y})`
   ).join('\n');
 
   const relationshipSummaries = currentState.npcs.map(n => {
     const rels = n.relationships.map(r => `${r.targetName}[${r.type}:${r.affinity}]`).join(', ');
-    return `${n.name} Relationships: {${rels}}`;
+    return `${n.name} Rels: {${rels}}`;
   }).join('\n');
 
-  // Interpret Player Actions strictly
   let playerIntervention = "No Player Intervention.";
   if (playerActions.length > 0) {
-    playerIntervention = "PLAYER 'GOD' ACTIONS (MUST BE OBEYED & HAVE IMMEDIATE IMPACT):\n" + 
+    playerIntervention = "PLAYER ACTIONS:\n" + 
       playerActions.map(a => 
-        `- ACTION TYPE: ${a.type}\n  TARGET: ${a.targetId || 'Global'}\n  CONTENT: "${a.content}"\n  RULE: This is absolute truth to the NPCs.`
+        `- TYPE: ${a.type} TARGET: ${a.targetId || 'Global'} CONTENT: "${a.content}"`
       ).join('\n');
   }
 
-  // Objective formatting
-  let objectiveContext = "";
-  if (currentState.objective) {
-    objectiveContext = `CURRENT GAME OBJECTIVE: ${currentState.objective.description}. (Day ${currentState.day}/${currentState.objective.deadlineDay})`;
-  }
-
   const prompt = `
-    You are the Director of a **High-Stakes, Fast-Paced Wuxia Drama**.
+    Director Mode: Simulate the next time phase in "Rice Fragrance Village".
     
     **CONTEXT:**
-    Day: ${currentState.day}
+    Day: ${currentState.day}, Time: ${currentState.timePhase}
     NPCs:
     ${npcSummaries}
     Relationships:
     ${relationshipSummaries}
     
     ${playerIntervention}
-    
-    ${objectiveContext}
 
-    **CORE INSTRUCTION: RELATIONSHIP-DRIVEN PLOT**
-    The simulation must be driven by the specific relationships between characters. A "Day" in this game is a narrative turn.
+    **RULES OF THE JIANGHU (STAT SYSTEMS):**
+    1. **Time Phase Impact**:
+       - Morning/Afternoon: Public events, work, training.
+       - Evening: Socializing, drinking.
+       - Night: Assassinations, secret meetings, strange rituals.
+    2. **Corruption (SAN)**:
+       - SAN increases when witnessing death, secrets, or being acted on by 'INCEPTION'.
+       - **SAN > 80**: NPC enters 'QiDeviated' (走火入魔). THEY MUST ATTACK OTHERS.
+       - **SAN > 95**: NPC is uncontrollably violent. Villagers must team up to kill them.
+    3. **Health (HP) & Martial (MP)**:
+       - Combat Outcome = (Attacker MP + Random) vs (Defender MP + Random).
+       - Loser takes HP damage (10-50).
+       - **HP < 20**: Status -> 'Injured'.
+       - **HP <= 0**: Status -> 'Dead'.
+    4. **Behavior**:
+       - 'QiDeviated' NPCs attack random people or their Obsession.
+       - Enemies attack each other if in same location.
+       - Lovers protect each other.
     
-    **BEHAVIOR RULES (Apply these STRICTLY based on Relationship Type):**
-    1. **Enemies (仇敌)**:
-       - MUST generate CONFLICT. Examples: Ambush, Poisoning, Public Challenge, Spreading malicious rumors.
-       - Affinity decreases further.
-       - If Affinity < -80, Attempt Murder (Status -> Dead).
-    2. **Lovers (情缘)**:
-       - MUST generate ROMANCE/SUPPORT. Examples: Secret rendezvous, Gifting heirlooms, Healing injuries, Defending honor.
-       - Affinity increases.
-    3. **Master/Disciple (师徒)**:
-       - MUST generate GROWTH/DISCIPLINE. Examples: Teaching secret arts (Action: "Transmits Qi"), Punishing mistakes, Saving from danger.
-       - Trust increases.
-    4. **Family (家人)**:
-       - MUST generate LOYALTY/DRAMA. Examples: Covering up crimes, Arranged marriage disputes, Financial help.
-    5. **No Relationship**:
-       - Create chance encounters that lead to NEW relationships.
-    
-    **ADDITIONAL DIRECTIVES:**
-    - **Accelerate the Plot**: Boredom is death. Every NPC must take a decisive action.
-    - **Enforce Player Will**: If Player used INCEPTION/FABRICATE, NPCs react instantly and dramatically.
-    - **Forced Relationship Evolution**: 
-       - If Affinity > 60 and not 'Lover'/'Family', CHANGE TYPE TO 'Lover' or 'Sworn Brother'.
-       - If Affinity < -40 and not 'Enemy', CHANGE TYPE TO 'Enemy'.
-       - Teaching Action -> Change to 'Master'/'Disciple'.
-    - **Global Event**: Invent a random daily event to stir chaos (e.g., "A poisonous fog descends", "The Emperor's guard arrives").
-    
-    **OUTPUT REQUIREMENTS (JSON):**
-    - **logs**: Dramatic narrative of actions. Use "Thought" for inner monologue, "Action" for visible deeds.
-    - **relationshipUpdates**: Drastic changes. Send 'newType' if thresholds are met.
-    - **npcStatusUpdates**: Kill off characters, jail them, or marry them off. Do not keep everyone 'Normal'.
-    - **newspaper**: A sensationalist headline summarizing the chaos.
-    - **gameOutcome**: Check strictly if the Objective is met (Victory) or if time is up (Defeat).
+    **OUTPUT REQUIREMENTS:**
+    - **statUpdates**: You MUST modify stats based on events. 
+       - Fighting -> decrease HP. 
+       - Training -> increase MP. 
+       - Trauma -> increase SAN. 
+       - Healing -> increase HP.
+    - **npcStatusUpdates**: Enforce logic (Dead if HP=0, QiDeviated if SAN>80).
+    - **newspaper**: Only generate if something major happened (Death, Frenzy) or if it's 'Morning'. Otherwise empty.
 
-    **Language**: Simplified Chinese, dramatic Jianghu flavor.
+    Language: Simplified Chinese.
   `;
 
   return runWithRetry(async () => {
@@ -294,6 +274,19 @@ export const simulateDay = async (
                 required: ['sourceName', 'targetName', 'affinityChange', 'trustChange']
               }
             },
+            statUpdates: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        npcName: { type: Type.STRING },
+                        hpChange: { type: Type.INTEGER },
+                        mpChange: { type: Type.INTEGER },
+                        sanChange: { type: Type.INTEGER }
+                    },
+                    required: ['npcName', 'hpChange', 'mpChange', 'sanChange']
+                }
+            },
             newIntel: {
               type: Type.ARRAY,
               items: {
@@ -312,7 +305,7 @@ export const simulateDay = async (
                 headline: { type: Type.STRING },
                 articles: { type: Type.ARRAY, items: { type: Type.STRING } }
               },
-              required: ['headline', 'articles']
+              nullable: true
             },
             npcStatusUpdates: {
               type: Type.ARRAY,
@@ -320,7 +313,7 @@ export const simulateDay = async (
                 type: Type.OBJECT,
                 properties: {
                   npcName: { type: Type.STRING },
-                  status: { type: Type.STRING, enum: ['Normal', 'Agitated', 'Depressed', 'Left Village', 'Married', 'Dead', 'Jailed', 'Heartbroken', 'Escaped'] },
+                  status: { type: Type.STRING, enum: ['Normal', 'Agitated', 'Depressed', 'Left Village', 'Married', 'Dead', 'Jailed', 'Heartbroken', 'Escaped', 'QiDeviated', 'Injured'] },
                   mood: { type: Type.STRING },
                   newPosition: {
                     type: Type.OBJECT,

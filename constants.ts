@@ -1,3 +1,4 @@
+
 import { NPC } from "./types";
 
 export const GRID_SIZE = 4; // 4x4 Grid
@@ -5,6 +6,7 @@ export const MAX_AP_PER_DAY = 3;
 
 export const INITIAL_LOG_ENTRY = {
   day: 0,
+  timePhase: 'Morning' as const,
   content: "欢迎来到稻香村。江湖风云暗涌，你是掌握天机的观察者。",
   type: 'System' as const
 };
@@ -12,13 +14,22 @@ export const INITIAL_LOG_ENTRY = {
 export const STATUS_MAP: Record<string, string> = {
   'Normal': '正常',
   'Agitated': '杀气',
-  'Depressed': '内伤',
+  'Depressed': '抑郁',
   'Left Village': '闯荡江湖',
   'Married': '神仙眷侣',
-  'Dead': '重伤不治',
-  'Jailed': '关入大牢',
+  'Dead': '死亡',
+  'Jailed': '囚禁',
   'Heartbroken': '断肠',
-  'Escaped': '亡命天涯'
+  'Escaped': '亡命',
+  'QiDeviated': '走火入魔',
+  'Injured': '重伤'
+};
+
+export const TIME_PHASE_MAP: Record<string, string> = {
+  'Morning': '辰时 (清晨)',
+  'Afternoon': '未时 (午后)',
+  'Evening': '酉时 (黄昏)',
+  'Night': '子时 (深夜)'
 };
 
 // 4x4 Grid Location Names [y][x] - Village Scale with Jianghu flavor
@@ -43,6 +54,9 @@ export const PLACEHOLDER_NPCS: NPC[] = [
     relationships: [],
     currentMood: '深沉',
     status: 'Normal',
+    hp: 90,
+    mp: 95,
+    san: 10,
     position: { x: 0, y: 0 }
   },
   {
@@ -57,6 +71,9 @@ export const PLACEHOLDER_NPCS: NPC[] = [
     relationships: [],
     currentMood: '忧虑',
     status: 'Normal',
+    hp: 80,
+    mp: 60,
+    san: 20,
     position: { x: 0, y: 0 }
   }
 ];
