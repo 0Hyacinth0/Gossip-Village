@@ -1,7 +1,7 @@
 
 import { NPC, LogEntry, TimePhase, RelationshipType, IntelCard } from '../types';
 import { SimulationResponse } from '../services/geminiService';
-import { MAX_AP_PER_DAY } from '../constants';
+import { MAX_AP_PER_DAY, LOCATION_MAP } from '../constants';
 
 interface ProcessResult {
     updatedNPCs: NPC[];
@@ -126,7 +126,7 @@ export const processSimulationResults = (
             }
         }
 
-        // 3. Movement
+        // 3. Movement Logic
         let newPosition = npc.position;
         const isInactive = inactiveStates.includes(computedStatus);
         const wasInactive = inactiveStates.includes(npc.status);
@@ -135,7 +135,22 @@ export const processSimulationResults = (
             newPosition = npc.position;
         } else if (statusUpdate?.newPosition) {
             const { x, y } = statusUpdate.newPosition;
-            if (x >= 0 && x < 4 && y >= 0 && y < 4) newPosition = { x, y };
+            // Check bounds
+            if (x >= 0 && x < 4 && y >= 0 && y < 4) {
+                // Movement Check for Logging
+                if (x !== npc.position.x || y !== npc.position.y) {
+                    const oldLocName = LOCATION_MAP[npc.position.y]?.[npc.position.x] || '未知区域';
+                    const newLocName = LOCATION_MAP[y]?.[x] || '未知区域';
+                    newLogs.push({
+                        day: currentDay,
+                        timePhase: currentTimePhase,
+                        npcName: npc.name,
+                        content: `${npc.name} 从 ${oldLocName} 移动到了 ${newLocName}。`,
+                        type: 'Action' // Visual feedback for auto-movement
+                    });
+                }
+                newPosition = { x, y };
+            }
         }
 
         return {

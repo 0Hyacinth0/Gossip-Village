@@ -218,33 +218,41 @@ export const simulateDay = async (
     
     ${playerIntervention}
 
-    **RULES OF THE JIANGHU (COMBAT & STATS):**
+    **CORE RULES:**
     
-    1. **COMBAT LOGIC (Mandatory when Enemies meet):**
+    1. **DAILY ROUTINES (AUTONOMOUS MOVEMENT)**:
+       You MUST update 'newPosition' based on the Time Phase and Role:
+       - **Morning/Afternoon (Work)**: 
+         * Village Chief/Officials -> 'Village Chief's House' or 'Official'.
+         * Blacksmith -> 'Smithy'.
+         * Doctor -> 'Herb Garden'.
+         * Guards/Warriors -> 'Martial Field' (Training).
+       - **Evening (Social)**: 
+         * High chance to move to 'Tavern' (Rice Fragrance Inn) or 'Market'.
+         * Lovers tend to move to the same location.
+       - **Night (Rest)**: 
+         * Return to 'Secluded' areas, Homes, or 'Temple'.
+         * Suspicious characters might go to 'Secret Cave' or 'Graveyard'.
+    
+    2. **COMBAT & CONFLICT**:
        - IF 'Enemy' or 'QiDeviated' NPCs are in the **same location**, a fight MUST break out.
-       - **Winner Calculation**: (Attacker MP + random 1-20) vs (Defender MP + random 1-20).
-       - **Consequences**:
-         - **Loser**: HP -25 (Major Injury). Status -> 'Injured' if HP < 20. Gains MP +1. SAN +5 (Humiliation).
-         - **Winner**: MP +3 (Experience). HP -5. SAN -2 (Confidence Boost).
-         - **Spectators**: SAN +2 (Witnessing violence).
+       - **Winner**: (Attacker MP + random 1-20) vs (Defender MP + random 1-20).
+       - **Loser**: HP -25 (Major Injury). Status -> 'Injured' if HP < 20. Gains MP +1. SAN +5 (Humiliation).
+       - **Winner**: MP +3. HP -5. SAN -2.
+       - **Spectators**: SAN +2.
     
-    2. **GROWTH & TRAINING (MP Gain)**:
-       - **Training**: If an NPC is at '演武场' (Martial Field), '后山密洞' (Secret Cave), or '芦苇荡' (Reeds) during Morning/Afternoon, they should Train.
-       - **Effect**: MP +3 to +5. 
+    3. **GROWTH & TRAINING**:
+       - NPCs at 'Martial Field', 'Secret Cave', or 'Reeds' during Day gain MP +3 to +5.
     
-    3. **HEALTH & INJURY SYSTEM**:
-       - **Injured (HP < 20)**: Cannot attack. Must seek 'Temple'/'Doctor'.
-       - **Healing**: An 'Injured' NPC in 'Temple' or 'Doctor's House' gains HP +15.
-    
-    4. **CORRUPTION (SAN)**:
-       - **REST & RECOVERY**: If an NPC is engaged in peaceful activities (Drinking at Tavern, Resting at Home, Meditating at Temple) and NOT fighting, **SAN -5**.
-       - **SAN > 90**: Status -> 'QiDeviated'. BEHAVIOR: Attacks nearest person.
-       - **SAN > 95**: Self-destruction or massacre.
+    4. **HEALTH & SANITY**:
+       - **Healing**: 'Injured' NPC in 'Temple'/'Doctor's House' -> HP +15.
+       - **Recovery**: Peaceful activities (drinking, resting) -> SAN -5.
+       - **Qi Deviation**: SAN > 90 -> Status 'QiDeviated'. Attacks everyone.
     
     **OUTPUT REQUIREMENTS:**
-    - **statUpdates**: Return strictly calculated changes (e.g., hpChange: -30, mpChange: +5, sanChange: -5).
-    - **logs**: Describe the events.
-    - **npcStatusUpdates**: Update Status based on logic.
+    - **npcStatusUpdates**: MUST include 'newPosition' for at least 50% of NPCs (make them move!).
+    - **logs**: Describe the movement and interactions. e.g., "X went to the tavern to drink."
+    - **statUpdates**: Calculate strictly based on events.
     - **newspaper**: Generate only for Deaths or Massacres.
 
     Language: Simplified Chinese.
