@@ -70,12 +70,15 @@ echo ""
 # 3. 使用PM2启动应用
 echo "=== 3. 启动应用程序 ==="
 # 检查应用是否已存在
-if pm2 status gossip-village &> /dev/null; then
+APP_EXISTS=$(pm2 list | grep -q "gossip-village" && echo "true" || echo "false")
+if [ "$APP_EXISTS" = "true" ]; then
     echo "应用程序已存在，正在重启..."
     pm2 restart gossip-village
 else
     echo "首次启动应用程序..."
-    pm2 start ecosystem.config.cjs
+    # 确保使用正确的配置文件路径
+    echo "使用配置文件: $WORK_DIR/ecosystem.config.cjs"
+    pm2 start "$WORK_DIR/ecosystem.config.cjs"
 fi
 echo ""
 
@@ -94,10 +97,11 @@ echo ""
 echo "=== 6. 应用程序状态 ==="
 echo "应用名称: gossip-village"
 
-# 获取服务器IP地址
-SERVER_IP=$(hostname -I | awk '{print $1}')
+# 获取服务器公网IP
+echo "正在获取公网IP..."
+SERVER_IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip || echo "未知IP")
 PORT="3000"
-echo "访问地址: http://$SERVER_IP:$PORT"
+echo "公网访问: http://$SERVER_IP:$PORT"
 echo "本地访问: http://localhost:$PORT"
 echo ""
 

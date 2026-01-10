@@ -17,7 +17,8 @@ if ! command -v pm2 &> /dev/null; then
 fi
 
 # 检查应用是否在运行
-if pm2 status gossip-village &> /dev/null; then
+APP_EXISTS=$(pm2 list | grep -q "gossip-village" && echo "true" || echo "false")
+if [ "$APP_EXISTS" = "true" ]; then
     echo "应用状态: 运行中"
     echo ""
     
@@ -40,10 +41,11 @@ fi
 
 echo ""
 echo "=== 访问信息 ==="
-# 获取服务器IP地址
-SERVER_IP=$(hostname -I | awk '{print $1}')
+# 获取服务器公网IP
+echo "正在获取公网IP..."
+SERVER_IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip || echo "未知IP")
 PORT="3000"
-echo "访问地址: http://$SERVER_IP:$PORT"
+echo "公网访问: http://$SERVER_IP:$PORT"
 echo "本地访问: http://localhost:$PORT"
 
 echo ""

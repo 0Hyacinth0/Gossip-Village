@@ -69,12 +69,14 @@ fi
 # 6. 重启应用程序
 echo "=== 6. 重启应用程序 ==="
 # 检查应用是否在运行
-if pm2 status gossip-village &> /dev/null; then
+APP_EXISTS=$(pm2 list | grep -q "gossip-village" && echo "true" || echo "false")
+if [ "$APP_EXISTS" = "true" ]; then
     echo "重启应用程序..."
     pm2 restart gossip-village
 else
     echo "应用程序未运行，正在启动..."
-    pm2 start ecosystem.config.cjs
+    echo "使用配置文件: $WORK_DIR/ecosystem.config.cjs"
+    pm2 start "$WORK_DIR/ecosystem.config.cjs"
 fi
 
 echo ""

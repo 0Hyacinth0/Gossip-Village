@@ -17,7 +17,8 @@ if ! command -v pm2 &> /dev/null; then
 fi
 
 # 检查应用是否在运行
-if pm2 status gossip-village &> /dev/null; then
+APP_EXISTS=$(pm2 list | grep -q "gossip-village" && echo "true" || echo "false")
+if [ "$APP_EXISTS" = "true" ]; then
     echo "正在停止应用程序..."
     # 停止应用
     pm2 stop gossip-village
