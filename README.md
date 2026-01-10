@@ -132,3 +132,7 @@ server {
     }
 }
 ```
+
+## 开源协议 (License)
+
+本项目遵循 [MIT License](LICENSE) 开源协议。
