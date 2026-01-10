@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { NPC, GameState, DailyNews, LogEntry, IntelCard } from "../types";
+import { LOCATION_MAP } from "../constants";
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -198,6 +199,11 @@ export const simulateDay = async (
     return `${n.name} Rels: {${rels}}`;
   }).join('\n');
 
+  // Create Map Legend for AI Spatial Awareness
+  const mapLegend = LOCATION_MAP.flatMap((row, y) => 
+    row.map((name, x) => `"${name}": {x:${x}, y:${y}}`)
+  ).join(', ');
+
   let playerIntervention = "No Player Intervention.";
   if (playerActions.length > 0) {
     playerIntervention = "PLAYER ACTIONS:\n" + 
@@ -211,6 +217,10 @@ export const simulateDay = async (
     
     **CONTEXT:**
     Day: ${currentState.day}, Time: ${currentState.timePhase}
+    
+    **MAP GEOGRAPHY (COORDINATES {x,y}):**
+    ${mapLegend}
+
     NPCs:
     ${npcSummaries}
     Relationships:
@@ -221,18 +231,18 @@ export const simulateDay = async (
     **CORE RULES:**
     
     1. **DAILY ROUTINES (AUTONOMOUS MOVEMENT)**:
-       You MUST update 'newPosition' based on the Time Phase and Role:
+       You MUST update 'newPosition' by strictly referring to **MAP GEOGRAPHY** above.
        - **Morning/Afternoon (Work)**: 
-         * Village Chief/Officials -> 'Village Chief's House' or 'Official'.
-         * Blacksmith -> 'Smithy'.
-         * Doctor -> 'Herb Garden'.
-         * Guards/Warriors -> 'Martial Field' (Training).
+         * Village Chief/Officials -> '村长家'
+         * Blacksmith -> '打铁铺'
+         * Doctor -> '百草园'
+         * Guards/Warriors -> '演武场'
        - **Evening (Social)**: 
-         * High chance to move to 'Tavern' (Rice Fragrance Inn) or 'Market'.
+         * High chance to move to '稻香酒肆' (Tavern) or '水榭戏台'.
          * Lovers tend to move to the same location.
        - **Night (Rest)**: 
-         * Return to 'Secluded' areas, Homes, or 'Temple'.
-         * Suspicious characters might go to 'Secret Cave' or 'Graveyard'.
+         * Return to homes (Secluded), '破旧道观' (Temple), or '幽暗竹林'.
+         * Suspicious characters might go to '后山密洞' or '大侠墓'.
     
     2. **COMBAT & CONFLICT**:
        - IF 'Enemy' or 'QiDeviated' NPCs are in the **same location**, a fight MUST break out.
@@ -242,16 +252,16 @@ export const simulateDay = async (
        - **Spectators**: SAN +2.
     
     3. **GROWTH & TRAINING**:
-       - NPCs at 'Martial Field', 'Secret Cave', or 'Reeds' during Day gain MP +3 to +5.
+       - NPCs at '演武场' (Martial Field), '后山密洞' (Secret Cave), or '芦苇荡' (Reeds) during Day gain MP +3 to +5.
     
     4. **HEALTH & SANITY**:
-       - **Healing**: 'Injured' NPC in 'Temple'/'Doctor's House' -> HP +15.
+       - **Healing**: 'Injured' NPC in '破旧道观' (Temple)/'百草园' (Herb) -> HP +15.
        - **Recovery**: Peaceful activities (drinking, resting) -> SAN -5.
        - **Qi Deviation**: SAN > 90 -> Status 'QiDeviated'. Attacks everyone.
     
     **OUTPUT REQUIREMENTS:**
     - **npcStatusUpdates**: MUST include 'newPosition' for at least 50% of NPCs (make them move!).
-    - **logs**: Describe the movement and interactions. e.g., "X went to the tavern to drink."
+    - **logs**: Describe the movement and interactions strictly matching the MAP coordinates. e.g., if X goes to {x:1,y:2}, log "X went to 稻香酒肆".
     - **statUpdates**: Calculate strictly based on events.
     - **newspaper**: Generate only for Deaths or Massacres.
 
