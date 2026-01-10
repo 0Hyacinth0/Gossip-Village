@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { GameMode } from '../types';
 
@@ -17,7 +18,7 @@ const StartScreen: React.FC<StartScreenProps> = ({
   errorMsg 
 }) => {
   return (
-    <div className="min-h-screen bg-retro-bg text-retro-text flex flex-col items-center justify-center p-4 font-mono">
+    <div className="min-h-screen bg-retro-bg text-retro-text flex flex-col items-center justify-center p-4 font-mono relative">
       <h1 className="text-6xl text-retro-accent mb-4 font-bold tracking-tighter">八卦稻香村</h1>
       <h2 className="text-2xl mb-8 text-stone-500 uppercase tracking-widest">Gossip Village</h2>
       
@@ -53,6 +54,11 @@ const StartScreen: React.FC<StartScreenProps> = ({
       >
           {isSimulating ? '正在生成世界...' : '进入稻香村'}
       </button>
+
+      {/* Version Footer */}
+      <div className="absolute bottom-4 text-[10px] text-stone-700 font-mono tracking-widest opacity-60">
+        v0.9.6 "Mirage"
+      </div>
     </div>
   );
 };

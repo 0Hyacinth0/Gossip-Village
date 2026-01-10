@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { GameMode } from './types';
-import { TIME_PHASE_MAP } from './constants';
 
 // Components
 import VillageMap from './components/VillageMap';
@@ -13,6 +12,7 @@ import NewspaperModal from './components/NewspaperModal';
 import StartScreen from './components/StartScreen';
 import InteractionResultModal from './components/InteractionResultModal';
 import GameOverModal from './components/GameOverModal';
+import TimeDisplay from './components/TimeDisplay';
 
 const App: React.FC = () => {
   // Use the custom hook for all logic
@@ -33,19 +33,21 @@ const App: React.FC = () => {
   }
 
   const selectedNPC = engine.gameState.npcs.find(n => n.id === engine.selectedNPCId) || null;
-  const timeLabel = TIME_PHASE_MAP[engine.gameState.timePhase];
 
   return (
     <div className="h-screen bg-retro-bg text-retro-text font-mono flex flex-col overflow-hidden relative">
         {/* Top Bar */}
-        <div className="h-12 border-b border-retro-border flex items-center justify-between px-4 bg-retro-panel z-10 shrink-0">
-            <div className="flex items-center gap-4">
-                <span className="text-retro-accent font-bold hidden sm:block">八卦稻香村</span>
-                <span className="text-xs text-stone-400 font-bold border-l border-r border-stone-600 px-3">
-                    第{engine.gameState.day}天 · {timeLabel}
-                </span>
+        <div className="h-14 border-b border-retro-border flex items-center justify-between px-4 bg-retro-panel z-10 shrink-0 shadow-md">
+            <div className="flex items-center gap-4 h-full">
+                <span className="text-retro-accent font-bold text-lg hidden sm:block tracking-tight">八卦稻香村</span>
+                
+                {/* Visual Time Display */}
+                <div className="border-l border-r border-stone-700/50 px-2 h-full flex items-center bg-black/10">
+                    <TimeDisplay day={engine.gameState.day} phase={engine.gameState.timePhase} />
+                </div>
+
                 {engine.gameState.objective && (
-                    <span className="text-xs text-retro-text bg-stone-800 px-2 py-1 rounded border border-stone-600 truncate max-w-[150px] md:max-w-md" title={engine.gameState.objective.description}>
+                    <span className="text-xs text-stone-400 bg-stone-900/50 px-3 py-1 rounded-full border border-stone-700 truncate max-w-[120px] md:max-w-xs" title={engine.gameState.objective.description}>
                         🎯 {engine.gameState.objective.description}
                     </span>
                 )}
@@ -53,10 +55,10 @@ const App: React.FC = () => {
             <button 
                 onClick={engine.endDay}
                 disabled={engine.gameState.isSimulating}
-                className={`px-4 py-1 text-xs font-bold uppercase transition-all disabled:opacity-50
+                className={`px-5 py-2 text-xs font-bold uppercase transition-all rounded shadow-lg disabled:opacity-50 disabled:shadow-none
                     ${engine.gameState.gameOutcome 
-                        ? 'bg-retro-text text-retro-bg hover:bg-white animate-pulse' 
-                        : 'bg-retro-accent text-retro-bg hover:bg-retro-text'
+                        ? 'bg-white text-retro-bg hover:bg-stone-200 animate-pulse border-2 border-retro-text' 
+                        : 'bg-retro-accent text-retro-bg border-2 border-retro-accent hover:bg-retro-text hover:border-retro-text'
                     }
                 `}
             >
@@ -125,6 +127,13 @@ const App: React.FC = () => {
                 onCloseOverlay={() => engine.setIsGameOverOverlayOpen(false)}
             />
         )}
+
+        {/* System Version Watermark */}
+        <div className="absolute bottom-1 right-2 z-30 pointer-events-none select-none">
+            <span className="text-[10px] text-stone-600 font-mono opacity-50 tracking-wider">
+                v0.9.6 "Mirage"
+            </span>
+        </div>
     </div>
   );
 };
