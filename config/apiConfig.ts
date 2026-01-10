@@ -9,7 +9,7 @@ type AIProvider = 'gemini' | 'openai';
 
 export const API_CONFIG = {
   // 1. 选择提供商: 'gemini' 或 'openai'
-  provider: 'openai' as AIProvider, 
+  provider: 'gemini' as AIProvider, 
 
   // 2. API Key (从环境变量读取)
   apiKey: process.env.API_KEY,
@@ -17,13 +17,13 @@ export const API_CONFIG = {
   // 3. 模型 ID
   // Gemini 示例: 'gemini-3-flash-preview', 'gemini-2.0-flash'
   // DeepSeek 示例: 'deepseek-chat', 'deepseek-reasoner'
-  modelId: 'deepseek-chat',
+  modelId: 'gemini-3-flash-preview',
   
   // 4. Base URL
   // Gemini (SDK自动处理，通常留空或默认): 'https://generativelanguage.googleapis.com'
   // DeepSeek: 'https://api.deepseek.com'
   // Local/Ollama: 'http://localhost:11434/v1'
-  baseUrl: 'https://api.deepseek.com',
+  baseUrl: 'https://generativelanguage.googleapis.com',
 
   // 5. 超时设置 (毫秒)
   timeout: 30000
