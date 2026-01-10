@@ -1,0 +1,5 @@
+{
+  "name": "Gossip Village",
+  "description": "一款模拟游戏，你在其中扮演一个由AI代理组成的村庄的隐形观察者。通过散布谣言和秘密来操控关系和结局。",
+  "requestFramePermissions": []
+}
