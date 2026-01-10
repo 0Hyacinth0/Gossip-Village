@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     // 加载当前目录下的 .env 文件
-    const env = loadEnv(mode, process.cwd(), '');
+    const env = loadEnv(mode, '.', '');
     return {
       server: {
         port: 3000,
@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
       },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': path.resolve('.'),
         }
       }
     };
