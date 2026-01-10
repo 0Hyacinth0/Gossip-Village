@@ -1,11 +1,11 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { NPC, GameState, DailyNews, LogEntry, IntelCard } from "../types";
+import { Type } from "@google/genai";
+import { NPC, GameState } from "../types";
 import { LOCATION_MAP } from "../constants";
+import { requestJSON, API_CONFIG } from "../config/apiConfig";
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-const SIMULATION_MODEL = 'gemini-3-flash-preview';
+// Use the centralized model ID reference for logging if needed, but requestJSON handles the call.
+const SIMULATION_MODEL = API_CONFIG.modelId;
 
 // --- Helper Functions ---
 
@@ -43,7 +43,7 @@ export interface InitializationResponse {
 
 export interface InteractionResponse {
   reply: string;
-  revealedInfo: string | null; // If they reveal a secret, put it here
+  revealedInfo: string | null;
   moodChange: string;
 }
 
@@ -85,44 +85,38 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
   `;
 
   return runWithRetry(async () => {
-    const response = await ai.models.generateContent({
-      model: SIMULATION_MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            npcs: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  age: { type: Type.INTEGER },
-                  gender: { type: Type.STRING, enum: ['Male', 'Female'] },
-                  role: { type: Type.STRING },
-                  publicPersona: { type: Type.STRING },
-                  deepSecret: { type: Type.STRING },
-                  backstory: { type: Type.STRING },
-                  lifeGoal: { type: Type.STRING },
-                  currentMood: { type: Type.STRING },
-                  hp: { type: Type.INTEGER },
-                  mp: { type: Type.INTEGER },
-                  san: { type: Type.INTEGER },
-                  spawnZone: { type: Type.STRING, enum: ['Market', 'Official', 'Temple', 'Secluded'] },
-                  initialConnectionName: { type: Type.STRING, nullable: true },
-                  initialConnectionType: { type: Type.STRING, enum: ['Lover', 'Enemy', 'Master', 'Disciple', 'Family'], nullable: true }
-                },
-                required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'backstory', 'lifeGoal', 'currentMood', 'spawnZone', 'hp', 'mp', 'san']
-              }
+    // Define Schema using Google Types (Unified adapter will translate this for other providers)
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+        npcs: {
+            type: Type.ARRAY,
+            items: {
+            type: Type.OBJECT,
+            properties: {
+                name: { type: Type.STRING },
+                age: { type: Type.INTEGER },
+                gender: { type: Type.STRING, enum: ['Male', 'Female'] },
+                role: { type: Type.STRING },
+                publicPersona: { type: Type.STRING },
+                deepSecret: { type: Type.STRING },
+                backstory: { type: Type.STRING },
+                lifeGoal: { type: Type.STRING },
+                currentMood: { type: Type.STRING },
+                hp: { type: Type.INTEGER },
+                mp: { type: Type.INTEGER },
+                san: { type: Type.INTEGER },
+                spawnZone: { type: Type.STRING, enum: ['Market', 'Official', 'Temple', 'Secluded'] },
+                initialConnectionName: { type: Type.STRING, nullable: true },
+                initialConnectionType: { type: Type.STRING, enum: ['Lover', 'Enemy', 'Master', 'Disciple', 'Family'], nullable: true }
+            },
+            required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'backstory', 'lifeGoal', 'currentMood', 'spawnZone', 'hp', 'mp', 'san']
             }
-          }
         }
-      }
-    });
+        }
+    };
 
-    const data = JSON.parse(response.text || "{}") as InitializationResponse;
+    const data = await requestJSON<InitializationResponse>(prompt, schema);
     
     // Post-process
     return data.npcs.map((npc, index) => ({
@@ -167,24 +161,17 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
     `;
   
     return runWithRetry(async () => {
-      const response = await ai.models.generateContent({
-        model: SIMULATION_MODEL,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              reply: { type: Type.STRING },
-              revealedInfo: { type: Type.STRING, nullable: true },
-              moodChange: { type: Type.STRING }
-            },
-            required: ['reply', 'moodChange']
-          }
-        }
-      });
-  
-      return JSON.parse(response.text || "{}") as InteractionResponse;
+      const schema = {
+        type: Type.OBJECT,
+        properties: {
+          reply: { type: Type.STRING },
+          revealedInfo: { type: Type.STRING, nullable: true },
+          moodChange: { type: Type.STRING }
+        },
+        required: ['reply', 'moodChange']
+      };
+
+      return await requestJSON<InteractionResponse>(prompt, schema);
     });
   };
 
@@ -284,102 +271,95 @@ export const simulateDay = async (
   `;
 
   return runWithRetry(async () => {
-    const response = await ai.models.generateContent({
-      model: SIMULATION_MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            logs: {
-              type: Type.ARRAY,
-              items: {
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+        logs: {
+            type: Type.ARRAY,
+            items: {
+            type: Type.OBJECT,
+            properties: {
+                npcName: { type: Type.STRING },
+                thought: { type: Type.STRING },
+                action: { type: Type.STRING }
+            },
+            required: ['npcName', 'thought', 'action']
+            }
+        },
+        relationshipUpdates: {
+            type: Type.ARRAY,
+            items: {
+            type: Type.OBJECT,
+            properties: {
+                sourceName: { type: Type.STRING },
+                targetName: { type: Type.STRING },
+                affinityChange: { type: Type.INTEGER },
+                trustChange: { type: Type.INTEGER },
+                newType: { type: Type.STRING, enum: ['None', 'Friend', 'Enemy', 'Lover', 'Family', 'Master', 'Disciple'], nullable: true }
+            },
+            required: ['sourceName', 'targetName', 'affinityChange', 'trustChange']
+            }
+        },
+        statUpdates: {
+            type: Type.ARRAY,
+            items: {
                 type: Type.OBJECT,
                 properties: {
-                  npcName: { type: Type.STRING },
-                  thought: { type: Type.STRING },
-                  action: { type: Type.STRING }
+                    npcName: { type: Type.STRING },
+                    hpChange: { type: Type.INTEGER },
+                    mpChange: { type: Type.INTEGER },
+                    sanChange: { type: Type.INTEGER }
                 },
-                required: ['npcName', 'thought', 'action']
-              }
+                required: ['npcName', 'hpChange', 'mpChange', 'sanChange']
+            }
+        },
+        newIntel: {
+            type: Type.ARRAY,
+            items: {
+            type: Type.OBJECT,
+            properties: {
+                content: { type: Type.STRING },
+                type: { type: Type.STRING },
+                sourceName: { type: Type.STRING }
             },
-            relationshipUpdates: {
-              type: Type.ARRAY,
-              items: {
+            required: ['content', 'type', 'sourceName']
+            }
+        },
+        newspaper: {
+            type: Type.OBJECT,
+            properties: {
+            headline: { type: Type.STRING },
+            articles: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            nullable: true
+        },
+        npcStatusUpdates: {
+            type: Type.ARRAY,
+            items: {
+            type: Type.OBJECT,
+            properties: {
+                npcName: { type: Type.STRING },
+                status: { type: Type.STRING, enum: ['Normal', 'Agitated', 'Depressed', 'Left Village', 'Married', 'Dead', 'Jailed', 'Heartbroken', 'Escaped', 'QiDeviated', 'Injured'] },
+                mood: { type: Type.STRING },
+                newPosition: {
                 type: Type.OBJECT,
-                properties: {
-                  sourceName: { type: Type.STRING },
-                  targetName: { type: Type.STRING },
-                  affinityChange: { type: Type.INTEGER },
-                  trustChange: { type: Type.INTEGER },
-                  newType: { type: Type.STRING, enum: ['None', 'Friend', 'Enemy', 'Lover', 'Family', 'Master', 'Disciple'], nullable: true }
-                },
-                required: ['sourceName', 'targetName', 'affinityChange', 'trustChange']
-              }
-            },
-            statUpdates: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        npcName: { type: Type.STRING },
-                        hpChange: { type: Type.INTEGER },
-                        mpChange: { type: Type.INTEGER },
-                        sanChange: { type: Type.INTEGER }
-                    },
-                    required: ['npcName', 'hpChange', 'mpChange', 'sanChange']
+                properties: { x: { type: Type.INTEGER }, y: { type: Type.INTEGER } }
                 }
             },
-            newIntel: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  content: { type: Type.STRING },
-                  type: { type: Type.STRING },
-                  sourceName: { type: Type.STRING }
-                },
-                required: ['content', 'type', 'sourceName']
-              }
-            },
-            newspaper: {
-              type: Type.OBJECT,
-              properties: {
-                headline: { type: Type.STRING },
-                articles: { type: Type.ARRAY, items: { type: Type.STRING } }
-              },
-              nullable: true
-            },
-            npcStatusUpdates: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  npcName: { type: Type.STRING },
-                  status: { type: Type.STRING, enum: ['Normal', 'Agitated', 'Depressed', 'Left Village', 'Married', 'Dead', 'Jailed', 'Heartbroken', 'Escaped', 'QiDeviated', 'Injured'] },
-                  mood: { type: Type.STRING },
-                  newPosition: {
-                    type: Type.OBJECT,
-                    properties: { x: { type: Type.INTEGER }, y: { type: Type.INTEGER } }
-                  }
-                },
-                required: ['npcName', 'status', 'mood']
-              }
-            },
-            gameOutcome: {
-              type: Type.OBJECT,
-              properties: {
-                result: { type: Type.STRING, enum: ['Victory', 'Defeat'] },
-                reason: { type: Type.STRING }
-              },
-              nullable: true
+            required: ['npcName', 'status', 'mood']
             }
-          }
+        },
+        gameOutcome: {
+            type: Type.OBJECT,
+            properties: {
+            result: { type: Type.STRING, enum: ['Victory', 'Defeat'] },
+            reason: { type: Type.STRING }
+            },
+            nullable: true
         }
-      }
-    });
+        }
+    };
 
-    return JSON.parse(response.text || "{}") as SimulationResponse;
+    return await requestJSON<SimulationResponse>(prompt, schema);
   });
 };
