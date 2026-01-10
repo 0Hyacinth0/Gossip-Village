@@ -217,6 +217,8 @@ export const simulateDay = async (
     
     **CONTEXT:**
     Day: ${currentState.day}, Time: ${currentState.timePhase}
+    Game Mode: "${currentState.gameMode}"
+    Objective: "${currentState.objective?.description || 'Survive and observe.'}"
     
     **MAP GEOGRAPHY (COORDINATES {x,y}):**
     ${mapLegend}
@@ -258,12 +260,19 @@ export const simulateDay = async (
        - **Healing**: 'Injured' NPC in '破旧道观' (Temple)/'百草园' (Herb) -> HP +15.
        - **Recovery**: Peaceful activities (drinking, resting) -> SAN -5.
        - **Qi Deviation**: SAN > 90 -> Status 'QiDeviated'. Attacks everyone.
+
+    **GAME ENDING RULES:**
+    1. **Sandbox Mode**: The game should NOT end. Do not return a 'gameOutcome' unless every single NPC is Dead. There is no time limit.
+    2. **Matchmaker / Detective / Chaos Modes**: Evaluate strictly based on the "Objective". 
+       - If the deadline (Day 7) is passed and goal NOT met -> 'Defeat'. 
+       - If goal met -> 'Victory'.
     
     **OUTPUT REQUIREMENTS:**
     - **npcStatusUpdates**: MUST include 'newPosition' for at least 50% of NPCs (make them move!).
     - **logs**: Describe the movement and interactions strictly matching the MAP coordinates. e.g., if X goes to {x:1,y:2}, log "X went to 稻香酒肆".
     - **statUpdates**: Calculate strictly based on events.
     - **newspaper**: Generate only for Deaths or Massacres.
+    - **gameOutcome**: Only provide this if the specific Game Mode ending conditions are met.
 
     Language: Simplified Chinese.
   `;
