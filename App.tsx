@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { GameMode } from './types';
+import { APP_CONFIG } from './config/appConfig';
 
 // Components
 import VillageMap from './components/VillageMap';
@@ -41,7 +42,7 @@ const App: React.FC = () => {
         {/* Top Bar */}
         <div className="h-14 border-b border-retro-border flex items-center justify-between px-4 bg-retro-panel z-10 shrink-0 shadow-md">
             <div className="flex items-center gap-4 h-full">
-                <span className="text-retro-accent font-bold text-lg hidden sm:block tracking-tight">八卦稻香村</span>
+                <span className="text-retro-accent font-bold text-lg hidden sm:block tracking-tight">{APP_CONFIG.NAME}</span>
                 
                 {/* Visual Time Display */}
                 <div className="border-l border-r border-stone-700/50 px-2 h-full flex items-center bg-black/10">
@@ -147,7 +148,7 @@ const App: React.FC = () => {
         {/* System Version Watermark */}
         <div className="absolute bottom-1 right-2 z-30 pointer-events-none select-none">
             <span className="text-[10px] text-stone-600 font-mono opacity-50 tracking-wider">
-                v0.9.6 "Mirage"
+                {APP_CONFIG.VERSION} "{APP_CONFIG.CODENAME}"
             </span>
         </div>
     </div>
@@ -155,3 +156,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+        

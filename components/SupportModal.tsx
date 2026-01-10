@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { APP_CONFIG } from '../config/appConfig';
 
 interface SupportModalProps {
   isOpen: boolean;
@@ -27,9 +28,10 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
 
         <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-retro-accent mb-2">支持开发者</h2>
-            <p className="text-stone-400 text-sm leading-relaxed">
-                您的支持将用于支付API调用费用及服务器维护，<br/>让稻香村的故事能够继续演绎下去。
-            </p>
+            <p 
+                className="text-stone-400 text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: APP_CONFIG.SUPPORT_MESSAGE }}
+            />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -65,3 +67,4 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
 };
 
 export default SupportModal;
+        
