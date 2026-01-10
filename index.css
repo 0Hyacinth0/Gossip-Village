@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 你的自定义样式 */
+body {
+  background-color: #1a1815;
+  color: #d6cfc7;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1815; 
+}
+::-webkit-scrollbar-thumb {
+  background: #4a453f; 
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5d5750; 
+}
