@@ -148,14 +148,15 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
       Backstory: ${npc.backstory}.
       Secret: ${npc.deepSecret}.
       Current State: ${npc.status}.
-      Stats: HP ${npc.hp}, Martial ${npc.mp}, Corruption ${npc.san}.
+      Stats: HP ${npc.hp}, Martial Power (MP) ${npc.mp}, Corruption ${npc.san}.
       Social Circle:
       ${relationshipsCtx || "None."}
 
       The Player (a mysterious inner voice or stranger) asks: "${question}"
       
       **Directives:**
-      1. **Tone**: Driven by relationships and current corruption (SAN). 
+      1. **Tone**: Driven by relationships and stats.
+         - **HIGH MP (${npc.mp} > 80)**: YOU MUST be arrogant, confident, or threatening. Occasionally append a boastful phrase like "我的剑法已臻化境！" or "土鸡瓦狗，不堪一击！".
          - If SAN > 60: Unstable, murmuring, violent thoughts.
          - If SAN > 90 (QiDeviated): Completely insane.
          - If HP < 20 (Injured): Weak, coughing, pleading for help or medicine.
@@ -236,7 +237,9 @@ export const simulateDay = async (
     **CORE RULES:**
     
     1. **DAILY ROUTINES (AUTONOMOUS MOVEMENT)**:
-       You MUST update 'newPosition' by strictly referring to **MAP GEOGRAPHY** above.
+       - **Personality Influence**:
+         * High MP (>70): Act arrogantly. Confront others.
+         * Low MP (<30): Act timidly. Avoid crowds or conflict.
        - **Morning/Afternoon (Work)**: 
          * Village Chief/Officials -> '村长家'
          * Blacksmith -> '打铁铺'
@@ -244,24 +247,24 @@ export const simulateDay = async (
          * Guards/Warriors -> '演武场'
        - **Evening (Social)**: 
          * High chance to move to '稻香酒肆' (Tavern) or '水榭戏台'.
-         * Lovers tend to move to the same location.
        - **Night (Rest)**: 
-         * Return to homes (Secluded), '破旧道观' (Temple), or '幽暗竹林'.
-         * Suspicious characters might go to '后山密洞' or '大侠墓'.
+         * Return to homes (Secluded), '破旧道观' (Temple). Suspicious -> '后山密洞'.
     
     2. **COMBAT & CONFLICT**:
-       - IF 'Enemy' or 'QiDeviated' NPCs are in the **same location**, a fight MUST break out.
-       - **Winner**: (Attacker MP + random 1-20) vs (Defender MP + random 1-20).
-       - **Loser**: HP -25 (Major Injury). Status -> 'Injured' if HP < 20. Gains MP +1. SAN +5 (Humiliation).
-       - **Winner**: MP +3. HP -5. SAN -2.
-       - **Spectators**: SAN +2.
+       - **CLASH OF TITANS (Priority)**: IF TWO NPCs with MP > 90 are in the same location, they MUST fight.
+         * Outcome: 50% chance one dies instantly, 50% chance of Major Injury (HP=1).
+         * Log: Describe a catastrophic battle (e.g., "Shattered the earth", "Sword qi destroyed the house").
+       - **Normal Combat**: IF 'Enemy' or 'QiDeviated' NPCs are in the **same location**.
+         * Winner: (Attacker MP + random 1-20) vs (Defender MP + random 1-20).
+         * Loser: HP -25. Gains MP +2. SAN +5.
+         * Winner: MP +5 (Combat Experience). HP -5. SAN -2.
     
-    3. **GROWTH & TRAINING**:
-       - NPCs at '演武场' (Martial Field), '后山密洞' (Secret Cave), or '芦苇荡' (Reeds) during Day gain MP +3 to +5.
+    3. **GROWTH & TRAINING (Accelerated)**:
+       - NPCs at '演武场', '后山密洞', or '芦苇荡' during Day gain **MP +8 to +12**.
+       - Combat Winners gain **MP +5**.
     
     4. **HEALTH & SANITY**:
        - **Healing**: 'Injured' NPC in '破旧道观' (Temple)/'百草园' (Herb) -> HP +15.
-       - **Recovery**: Peaceful activities (drinking, resting) -> SAN -5.
        - **Qi Deviation**: SAN > 90 -> Status 'QiDeviated'. Attacks everyone.
 
     **GAME ENDING RULES:**
@@ -272,7 +275,7 @@ export const simulateDay = async (
     
     **OUTPUT REQUIREMENTS:**
     - **npcStatusUpdates**: MUST include 'newPosition' for at least 50% of NPCs (make them move!).
-    - **logs**: Describe the movement and interactions strictly matching the MAP coordinates. e.g., if X goes to {x:1,y:2}, log "X went to 稻香酒肆".
+    - **logs**: Describe the movement and interactions strictly matching the MAP coordinates.
     - **statUpdates**: Calculate strictly based on events.
     - **newspaper**: Generate only for Deaths or Massacres.
     - **gameOutcome**: Only provide this if the specific Game Mode ending conditions are met.

@@ -36,6 +36,9 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
   
   const statusCN = STATUS_MAP[npc.status] || npc.status;
 
+  // Calculate Battle Power
+  const battlePower = Math.floor(npc.mp * 1.5 + npc.hp * 0.5);
+
   // Stat Bar Helper
   const StatBar = ({ label, value, colorClass, max = 100 }: { label: string, value: number, colorClass: string, max?: number }) => (
     <div className="flex flex-col text-xs mb-2">
@@ -70,8 +73,16 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
       </div>
       
       {/* RPG Stats Section */}
-      <div className="bg-black/20 p-2 rounded border border-white/5">
-        <h3 className="text-retro-text text-xs uppercase font-bold mb-2">基础属性</h3>
+      <div className="bg-black/20 p-2 rounded border border-white/5 relative overflow-hidden">
+        {/* Battle Power Display */}
+        <div className="absolute right-2 top-2 text-right opacity-20 pointer-events-none">
+            <div className="text-4xl font-black">⚔️</div>
+        </div>
+        <div className="flex justify-between items-end mb-2 border-b border-white/10 pb-2">
+            <span className="text-retro-text text-xs uppercase font-bold">综合战力</span>
+            <span className="text-xl font-black text-amber-500 font-serif tracking-widest">{battlePower}</span>
+        </div>
+
         <StatBar label="气血 (HP)" value={npc.hp} colorClass={isInjured ? "bg-red-800 animate-pulse" : "bg-retro-red"} />
         <StatBar label="武力 (MP)" value={npc.mp} colorClass="bg-retro-accent" />
         <StatBar label="入魔 (SAN)" value={npc.san} colorClass={isQiDeviated ? "bg-purple-500 animate-pulse" : "bg-purple-600"} />

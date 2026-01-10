@@ -54,6 +54,7 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
             <div className={`w-full h-full grid ${gridLayout} gap-0.5 overflow-hidden z-10`}>
                 {npcsInCell.map((npc, idx) => {
                     const isSelected = selectedNPC?.id === npc.id;
+                    const battlePower = Math.floor(npc.mp * 1.5 + npc.hp * 0.5);
                     
                     // Determine relationship border color
                     let relationColor = "border-transparent";
@@ -117,7 +118,7 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                             }}
                             className={`
                                 flex flex-col items-center justify-center rounded
-                                border-2 transition-all w-full h-full min-h-0
+                                border-2 transition-all w-full h-full min-h-0 relative group
                                 ${spanClass}
                                 ${!isInactive ? 'cursor-pointer' : 'cursor-not-allowed pointer-events-none'}
                                 ${isSelected ? 'border-retro-accent bg-retro-panel' : `${relationColor} hover:bg-stone-800`}
@@ -135,6 +136,18 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                                 {npc.name}
                             </div>
                             
+                            {/* Battle Power Badge */}
+                            {!isInactive && (
+                                <div className={`
+                                    absolute -top-1 -right-1 rounded bg-stone-900 border border-stone-600 
+                                    text-[8px] px-1 font-mono leading-tight z-10
+                                    ${battlePower > 150 ? 'text-amber-500 border-amber-500' : 'text-stone-400'}
+                                    ${isCrowded ? 'hidden group-hover:block' : 'block'}
+                                `}>
+                                    ⚔️{battlePower}
+                                </div>
+                            )}
+
                             {/* Role (only if single view) */}
                             {!isInactive && count === 1 && (
                                 <div className="text-[10px] text-stone-500 truncate">{npc.role}</div>
