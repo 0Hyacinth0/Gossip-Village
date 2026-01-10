@@ -30,10 +30,10 @@ const StartScreen: React.FC<StartScreenProps> = ({
                   onClick={() => onSelectMode(mode)}
                   className={`py-2 border-2 text-sm uppercase ${selectedMode === mode ? 'border-retro-accent text-retro-accent' : 'border-stone-700 text-stone-600'}`}
                >
-                  {mode === 'Matchmaker' && '💘 红娘模式'}
-                  {mode === 'Detective' && '🔍 侦探模式'}
-                  {mode === 'Chaos' && '🔥 混乱模式'}
-                  {mode === 'Sandbox' && '🧘 沙盒模式'}
+                  {mode === 'Matchmaker' && '红娘模式'}
+                  {mode === 'Detective' && '侦探模式'}
+                  {mode === 'Chaos' && '混乱模式'}
+                  {mode === 'Sandbox' && '沙盒模式'}
                </button>
            ))}
       </div>

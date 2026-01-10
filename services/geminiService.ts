@@ -48,30 +48,15 @@ interface InteractionResponse {
 
 export const generateVillage = async (villagerCount: number): Promise<NPC[]> => {
   const prompt = `
-    Generate ${villagerCount} unique, complex characters for a Wuxia/Xianxia style game (specifically inspired by JX3/剑网3 style).
-    The setting is "Rice Fragrance Village" (稻香村), a legendary starting place in the Jianghu.
+    Generate ${villagerCount} unique, complex characters for a high-stakes Wuxia drama game.
+    The setting is "Rice Fragrance Village" (稻香村), but it is a powder keg waiting to explode.
     
     Current Task: Create initial NPC data.
     
     **CRITICAL DESIGN INSTRUCTIONS:**
-    1. **Diversity (Sects & Roles)**: Include characters from famous sects:
-       - "Tian Ce" (天策 - Soldiers/Generals)
-       - "Chun Yang" (纯阳 - Taoists)
-       - "Wan Hua" (万花 - Doctors/Scholars)
-       - "Qi Xiu" (七秀 - Dancers/Swordswomen)
-       - "Shao Lin" (少林 - Monks)
-       - "Tang Sect" (唐门 - Assassins)
-       - "Cang Yun" (苍云 - Shield Guards)
-       - "Ming Jiao" (明教 - Cultists)
-       - "Beggar Sect" (丐帮 - Beggars/Drunks)
-       - "Hidden Sword" (藏剑 - Smiths/Rich Nobles)
-       - "Five Venoms" (五毒 - Shamans)
-    2. **Naming**: Use poetic Chinese Wuxia names (e.g., 叶英, 李承恩, 东方宇轩 style names).
-    3. **Complex Relationships**: Ensure the "Deep Secret" creates Jianghu conflict. Examples:
-       - Secretly a spy for the "Valley of Villains" (恶人谷).
-       - Suffering from "Qi Deviation" (走火入魔).
-       - Holds a piece of a legendary treasure map.
-       - Seeking revenge for a sect massacre.
+    1. **Conflict-Ready Roles**: Include characters naturally opposed to each other (e.g., a hidden assassin vs. a retired constable, a rich merchant vs. a bandit spy).
+    2. **Sects**: Use JX3 sects (Tian Ce, Chun Yang, Wan Hua, Tang Sect, Ming Jiao, Five Venoms, etc.).
+    3. **Volatile Secrets**: The "Deep Secret" must be something that, if revealed, causes immediate fighting or tragedy (e.g., "I murdered the Village Chief's son," "I am poisoning the well").
     
     Language Requirement: 
     - The 'gender' field must be 'Male' or 'Female' (English Enum).
@@ -119,7 +104,7 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
       id: `npc-${Date.now()}-${index}`,
       status: 'Normal',
       position: { x: index % 3, y: Math.floor(index / 3) }, // Simple grid layout
-      relationships: [] // Will be populated in the first simulation tick or separately
+      relationships: [] 
     }));
   });
 };
@@ -131,28 +116,23 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
     ).join('\n');
 
     const prompt = `
-      Roleplay Simulation (Wuxia / JX3 Style).
+      Roleplay Simulation (High Drama Wuxia).
       
-      You are: ${npc.name} (${npc.role}, Age: ${npc.age}).
-      Sect/Background: Inferred from role (e.g., Taoist -> Chun Yang).
-      Personality: ${npc.publicPersona}.
-      Current Mood: ${npc.currentMood}.
-      Deepest Secret: ${npc.deepSecret}.
-      Goal: ${npc.lifeGoal}.
-      
-      Your Social Circle:
-      ${relationshipsCtx || "No significant relationships yet."}
+      You are: ${npc.name} (${npc.role}).
+      Secret: ${npc.deepSecret}.
+      Current State: ${npc.status}.
+      Social Circle:
+      ${relationshipsCtx || "None."}
 
-      A mysterious voice (The Observer) transmits a thought to you: "${question}"
+      The Player (a mysterious inner voice or stranger) asks: "${question}"
       
-      Instructions:
-      1. Respond in "Jianghu" style Chinese (Semi-classical, martial arts terms, '侠义风').
-      2. Keep it short (under 50 words).
-      3. **Behavioral Logic**:
-         - If the question mentions an **Enemy**, speak with hostility, suspicion, or disdain.
-         - If it mentions a **Lover**, speak with deep affection and protectiveness.
-         - If it mentions a **Master/Disciple**, show respect or authority.
-         - If the question touches your secret or sect weakness, be defensive or lie.
+      **Directives:**
+      1. **Be Dramatic**: Do not be polite. If you are angry, scream. If you are sad, weep.
+      2. **React to Keywords**: 
+         - If the player mentions your *Enemy*, threaten to kill them.
+         - If the player mentions your *Secret*, panic or get defensive.
+      3. **Brevity**: Under 40 words.
+      4. **Language**: Simplified Chinese, Wuxia style.
       
       Output JSON.
     `;
@@ -166,9 +146,9 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              reply: { type: Type.STRING, description: "NPC's spoken response" },
-              revealedInfo: { type: Type.STRING, nullable: true, description: "If a secret is revealed, summarize it. Otherwise null." },
-              moodChange: { type: Type.STRING, description: "New mood after interaction" }
+              reply: { type: Type.STRING },
+              revealedInfo: { type: Type.STRING, nullable: true },
+              moodChange: { type: Type.STRING }
             },
             required: ['reply', 'moodChange']
           }
@@ -184,94 +164,64 @@ export const simulateDay = async (
   playerActions: { type: string; targetId?: string; content: string }[]
 ): Promise<SimulationResponse> => {
   
-  // Prepare context for the AI
+  // Prepare context
   const npcSummaries = currentState.npcs.map(n => 
-    `${n.name} (ID: ${n.id}, ${n.role}): Status=${n.status}, Goal=${n.lifeGoal}, Loc=(${n.position.x},${n.position.y}). Secret: ${n.deepSecret}.`
+    `ID:${n.id} Name:${n.name} (${n.role}) Status:${n.status} Mood:${n.currentMood} Secret:${n.deepSecret} Loc:(${n.position.x},${n.position.y})`
   ).join('\n');
 
   const relationshipSummaries = currentState.npcs.map(n => {
-    const rels = n.relationships.map(r => `${r.targetName}[${r.type}]: ${r.affinity}`).join(', ');
-    return `${n.name} relationships: {${rels}}`;
+    const rels = n.relationships.map(r => `${r.targetName}[${r.type}:${r.affinity}]`).join(', ');
+    return `${n.name} Relationships: {${rels}}`;
   }).join('\n');
 
-  const mapContext = currentState.gridMap.flatMap((row, y) => 
-    row.map((name, x) => `(x:${x}, y:${y}) is "${name}"`)
-  ).join('\n');
-
-  let actionDescription = "The observer did nothing.";
+  // Interpret Player Actions strictly
+  let playerIntervention = "No Player Intervention.";
   if (playerActions.length > 0) {
-    actionDescription = "The observer actions:\n" + 
-      playerActions.map(a => `- ${a.type} to ${a.targetId || 'ALL'}: "${a.content}"`).join('\n');
+    playerIntervention = "PLAYER 'GOD' ACTIONS (MUST BE OBEYED & HAVE IMMEDIATE IMPACT):\n" + 
+      playerActions.map(a => 
+        `- ACTION TYPE: ${a.type}\n  TARGET: ${a.targetId || 'Global'}\n  CONTENT: "${a.content}"\n  RULE: This is absolute truth to the NPCs.`
+      ).join('\n');
   }
 
   // Objective formatting
-  let objectiveContext = "Mode: Sandbox.";
+  let objectiveContext = "";
   if (currentState.objective) {
-    const { mode, description, deadlineDay } = currentState.objective;
-    objectiveContext = `
-      MODE: ${mode}
-      GOAL: ${description}
-      DEADLINE: Day ${deadlineDay} (Current: ${currentState.day})
-      
-      RULES:
-      - Matchmaker: Win if Married/Lover. Lose if Heartbroken/Affinity<-50.
-      - Detective: Win if correct Broadcast accusation. Lose if wrong accusation or Culprit Escapes.
-      - Chaos: Win if >50% Dead/Jailed/Left.
-    `;
+    objectiveContext = `CURRENT GAME OBJECTIVE: ${currentState.objective.description}. (Day ${currentState.day}/${currentState.objective.deadlineDay})`;
   }
 
   const prompt = `
-    You are the simulation engine for "Gossip Village: JX3 Edition" (武侠版八卦村).
+    You are the Director of a **High-Stakes, Fast-Paced Wuxia Drama**.
     
-    Setting: A wuxia village where various sects (Tian Ce, Chun Yang, Tang Sect, etc.) coexist uneasily.
-    
-    Map:
-    ${mapContext}
-
-    Characters (Jianghu Heroes/Villains):
+    **CONTEXT:**
+    Day: ${currentState.day}
+    NPCs:
     ${npcSummaries}
-
-    Relationships (Types: Friend, Enemy, Lover, Family, Master, Disciple):
+    Relationships:
     ${relationshipSummaries}
-
-    Player Actions:
-    ${actionDescription}
-
+    
+    ${playerIntervention}
+    
     ${objectiveContext}
 
-    Task:
-    Simulate ONE day. Prioritize WUXIA DRAMA.
+    **CORE INSTRUCTION: "BOREDOM IS DEATH"**
+    1. **Accelerate the Plot**: Do not simulate a normal day. Simulate a *turning point*. Every NPC must take a decisive action today.
+    2. **Enforce Player Will**: If the player Planted a Thought (INCEPTION) or Spread a Rumor (FABRICATE), NPCs *must* believe it instantly and react violently or passionately. 
+       - Example: If player says "A killed B's father", B MUST attack A or swear revenge immediately.
+    3. **Forced Relationship Evolution**: 
+       - If Affinity > 50 and not 'Lover'/'Family', CHANGE TYPE TO 'Lover' or 'Sworn Brother'.
+       - If Affinity < -40 and not 'Enemy', CHANGE TYPE TO 'Enemy'.
+       - Enemies MUST fight (Status -> 'Dead' or 'Heartbroken' or 'Jailed').
+       - Lovers MUST meet or Elope (Status -> 'Left Village').
+    4. **Global Event**: Invent a random daily event to stir chaos (e.g., "A poisonous fog descends", "The Emperor's guard arrives").
     
-    **CRITICAL: Relationship-Driven Behavior**:
-    1. **Enemy (仇敌)**: 
-       - ACTION: Must generate conflict (Duels, Sabotage, Arguments).
-       - THOUGHT: Suspicious, hateful, planning revenge.
-    2. **Lover (情缘)**: 
-       - ACTION: Secret meetings, gifting jade/swords, healing each other.
-       - THOUGHT: Longing, protective, worried.
-    3. **Master/Disciple (师徒)**: 
-       - ACTION: Training (Kung Fu), scolding, imparting secrets.
-       - THOUGHT: Respect (Disciple) / Pride or Disappointment (Master).
-    4. **Friend (朋友)**: 
-       - ACTION: Drinking wine, sharing rumors, sparring friendly.
-    
-    Directives:
-    1. **Events**: Generate events based on the relationships above. If no strong relationship, create chance encounters.
-    2. **Conflict Rules**: 
-       - Affinities change dynamically based on interactions.
-       - **Update Relationship Type**:
-         - If Affinity > 60 and romance triggers -> set 'Lover'.
-         - If Affinity < -60 and violence triggers -> set 'Enemy'.
-         - If teaching skills -> set 'Master'/'Disciple'.
-    3. **Movement**:
-       - Chun Yang -> Meditate in Mountains/Temples.
-       - Beggars -> Markets/Ditches.
-       - Tang Sect -> Shadows/Forests.
-       - Tian Ce -> Camps/Open grounds.
-       - Wan Hua -> Gardens/Clinics.
-    4. **Language**: Use SIMPLIFIED CHINESE with Wuxia flavor (e.g., instead of "Sad", use "黯然神伤"; instead of "Angry", use "怒发冲冠").
-    
-    Return strictly JSON.
+    **OUTPUT REQUIREMENTS (JSON):**
+    - **logs**: Dramatic narrative of actions. Use "Thought" for inner monologue, "Action" for visible deeds.
+    - **relationshipUpdates**: Drastic changes. Send 'newType' if thresholds are met.
+    - **npcStatusUpdates**: Kill off characters, jail them, or marry them off. Do not keep everyone 'Normal'.
+    - **newspaper**: A sensationalist headline summarizing the chaos.
+    - **gameOutcome**: Check strictly if the Objective is met (Victory) or if time is up (Defeat).
+
+    **Language**: Simplified Chinese, dramatic Jianghu flavor.
   `;
 
   return runWithRetry(async () => {
