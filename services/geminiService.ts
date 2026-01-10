@@ -56,12 +56,21 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
     Current Task: Create initial NPC data, including their social web, location, and RPG Stats.
     
     **CRITICAL DESIGN INSTRUCTIONS:**
-    1. **Conflict & Connection**: Ensure some NPCs are *already* connected. 
-    2. **RPG Stats**:
-       - **HP (Health)**: 80-100 for warriors, 50-70 for civilians.
-       - **MP (Martial Power)**: 70-100 for Guards/Assassins/Sect Members. 0-20 for ordinary villagers.
-       - **SAN (Corruption/入魔值)**: 0-20 initially. Higher for villains or tragic characters.
-    3. **Spawn Zone**: Assign a 'spawnZone' based on their role.
+    1. **Conflict & Connection**: Ensure some NPCs are *already* connected via 'initialConnectionName'.
+    2. **RPG Stats (MUST MATCH BACKGROUND)**:
+       - **HP (Health)**: Derive from age/role. 
+         * High (85-100): Young warriors, blacksmiths, laborers.
+         * Medium (60-80): Normal adults, agile rogues.
+         * Low (30-55): Elderly, children, scholars, or the sick/poisoned.
+       - **MP (Martial Power)**: Derive from role/secret.
+         * Elite (80-100): Sect leaders, hidden masters, top assassins.
+         * Trained (50-79): Guards, disciples, bandits.
+         * Civilian (0-20): Merchants, farmers, pure scholars.
+       - **SAN (Corruption/入魔值)**: Derive from secret/mental state.
+         * High (40-60): Cultists (Ming Jiao/Five Venoms), spies, or those with tragic/guilty secrets.
+         * Medium (10-30): Ambitious characters, those with grudges.
+         * Low (0-9): Pure-hearted, monks, naive youths.
+    3. **Spawn Zone**: Assign a 'spawnZone' strictly based on their role.
     4. **Roles**: Use JX3 sects or classic Wuxia roles.
     
     Language Requirement: 
@@ -145,6 +154,7 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
       1. **Tone**: Driven by relationships and current corruption (SAN). 
          - If SAN > 60: Unstable, murmuring, violent thoughts.
          - If SAN > 90 (QiDeviated): Completely insane.
+         - If HP < 20 (Injured): Weak, coughing, pleading for help or medicine.
       2. **Brevity**: Under 40 words.
       3. **Language**: Simplified Chinese, Wuxia style.
       
@@ -208,33 +218,37 @@ export const simulateDay = async (
     
     ${playerIntervention}
 
-    **RULES OF THE JIANGHU (STAT SYSTEMS):**
-    1. **Time Phase Impact**:
-       - Morning/Afternoon: Public events, work, training.
-       - Evening: Socializing, drinking.
-       - Night: Assassinations, secret meetings, strange rituals.
-    2. **Corruption (SAN)**:
-       - SAN increases when witnessing death, secrets, or being acted on by 'INCEPTION'.
-       - **SAN > 80**: NPC enters 'QiDeviated' (走火入魔). THEY MUST ATTACK OTHERS.
-       - **SAN > 95**: NPC is uncontrollably violent. Villagers must team up to kill them.
-    3. **Health (HP) & Martial (MP)**:
-       - Combat Outcome = (Attacker MP + Random) vs (Defender MP + Random).
-       - Loser takes HP damage (10-50).
-       - **HP < 20**: Status -> 'Injured'.
-       - **HP <= 0**: Status -> 'Dead'.
-    4. **Behavior**:
-       - 'QiDeviated' NPCs attack random people or their Obsession.
-       - Enemies attack each other if in same location.
-       - Lovers protect each other.
+    **RULES OF THE JIANGHU (COMBAT & STATS):**
+    
+    1. **COMBAT LOGIC (Mandatory when Enemies meet):**
+       - IF 'Enemy' or 'QiDeviated' NPCs are in the **same location**, a fight MUST break out.
+       - **Winner Calculation**: (Attacker MP + random 1-20) vs (Defender MP + random 1-20).
+       - **Consequences**:
+         - **Loser**: HP -25 (Major Injury). Status -> 'Injured' if HP < 20. Gains MP +1 (Learns from defeat).
+         - **Winner**: MP +3 (Combat Experience). HP -5 (Minor scratch).
+         - **Spectators**: SAN +10 (Witnessing violence).
+    
+    2. **GROWTH & TRAINING (MP Gain)**:
+       - **Training**: If an NPC is at '演武场' (Martial Field), '后山密洞' (Secret Cave), or '芦苇荡' (Reeds) during Morning/Afternoon, they should Train.
+       - **Effect**: MP +3 to +5. 
+       - **Action Log**: "Practicing swordsmanship", "Meditating on secret arts".
+    
+    3. **HEALTH & INJURY SYSTEM**:
+       - **Injured (HP < 20)**: 
+         - BEHAVIOR: Cannot attack. Must seek 'Temple'/'Doctor' to heal, or hide in 'Secluded'.
+         - ACTION: "Coughs blood", "Limps away", "Meditates to heal".
+         - If attacked while Injured -> HP drops to 0 -> **DEAD**.
+       - **Healing**: An 'Injured' NPC in 'Temple' or 'Doctor's House' gains HP +15.
+    
+    4. **CORRUPTION (SAN)**:
+       - **SAN > 80**: Status -> 'QiDeviated'. BEHAVIOR: Attacks nearest person regardless of relationship.
+       - **SAN > 95**: Self-destruction or public massacre.
     
     **OUTPUT REQUIREMENTS:**
-    - **statUpdates**: You MUST modify stats based on events. 
-       - Fighting -> decrease HP. 
-       - Training -> increase MP. 
-       - Trauma -> increase SAN. 
-       - Healing -> increase HP.
-    - **npcStatusUpdates**: Enforce logic (Dead if HP=0, QiDeviated if SAN>80).
-    - **newspaper**: Only generate if something major happened (Death, Frenzy) or if it's 'Morning'. Otherwise empty.
+    - **statUpdates**: Return strictly calculated changes (e.g., hpChange: -30, mpChange: +5).
+    - **logs**: Describe the fight or training.
+    - **npcStatusUpdates**: Update Status based on logic.
+    - **newspaper**: Generate only for Deaths or Massacres.
 
     Language: Simplified Chinese.
   `;

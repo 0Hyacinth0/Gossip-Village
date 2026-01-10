@@ -391,7 +391,7 @@ export const useGameEngine = () => {
                     }
                 });
 
-                // Calculate New Stats
+                // 1. Calculate New Stats
                 let newHp = npc.hp;
                 let newMp = npc.mp;
                 let newSan = npc.san;
@@ -400,12 +400,49 @@ export const useGameEngine = () => {
                     newHp = Math.max(0, Math.min(100, npc.hp + statUpdate.hpChange));
                     newMp = Math.max(0, Math.min(100, npc.mp + statUpdate.mpChange));
                     newSan = Math.max(0, Math.min(100, npc.san + statUpdate.sanChange));
+                    
+                    // --- Added Feature: Log MP Growth ---
+                    if (statUpdate.mpChange > 0) {
+                        newLogs.push({
+                            day: gameState.day,
+                            timePhase: gameState.timePhase,
+                            npcName: npc.name,
+                            content: `${npc.name} 武学精进！武力值提升了 ${statUpdate.mpChange} 点。`,
+                            type: 'System'
+                        });
+                    }
                 }
 
-                const newStatus = (statusUpdate?.status as any) || npc.status;
-                let newPosition = npc.position;
+                // 2. Determine Logic-based Status (Strict Override)
+                // Default to AI suggestion or keep current
+                let computedStatus = (statusUpdate?.status as any) || npc.status;
                 const inactiveStates = ['Dead', 'Jailed', 'Left Village', 'Escaped'];
-                const isInactive = inactiveStates.includes(newStatus);
+                
+                // If previously inactive, keep inactive (Dead stays Dead)
+                if (inactiveStates.includes(npc.status)) {
+                    computedStatus = npc.status;
+                } else {
+                    // Force Status based on Stats
+                    if (newHp <= 0) {
+                        computedStatus = 'Dead';
+                        newHp = 0; // Cap at 0
+                    } else if (newHp < 20) {
+                        // Force Injured if not already Dead
+                        computedStatus = 'Injured';
+                    } else if (newSan > 80) {
+                        computedStatus = 'QiDeviated';
+                    } else if (computedStatus === 'Injured' && newHp >= 20) {
+                        // Heal back to normal
+                        computedStatus = 'Normal';
+                    } else if (computedStatus === 'QiDeviated' && newSan < 80) {
+                        // Recover sanity
+                        computedStatus = 'Normal';
+                    }
+                }
+
+                // 3. Movement
+                let newPosition = npc.position;
+                const isInactive = inactiveStates.includes(computedStatus);
                 const wasInactive = inactiveStates.includes(npc.status);
 
                 if (isInactive || wasInactive) {
@@ -417,7 +454,7 @@ export const useGameEngine = () => {
 
                 return {
                     ...npc,
-                    status: newStatus,
+                    status: computedStatus,
                     hp: newHp,
                     mp: newMp,
                     san: newSan,
