@@ -28,6 +28,11 @@ export interface NPC {
   currentMood: string;
   status: 'Normal' | 'Agitated' | 'Depressed' | 'Left Village' | 'Married' | 'Dead' | 'Jailed' | 'Heartbroken' | 'Escaped';
   position: { x: number; y: number }; // For the grid map
+  
+  // Generation metadata (optional)
+  spawnZone?: string; 
+  initialConnectionName?: string;
+  initialConnectionType?: string;
 }
 
 export interface IntelCard {

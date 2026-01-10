@@ -49,18 +49,29 @@ interface InteractionResponse {
 export const generateVillage = async (villagerCount: number): Promise<NPC[]> => {
   const prompt = `
     Generate ${villagerCount} unique, complex characters for a high-stakes Wuxia drama game.
-    The setting is "Rice Fragrance Village" (稻香村), but it is a powder keg waiting to explode.
+    The setting is "Rice Fragrance Village" (稻香村).
     
-    Current Task: Create initial NPC data.
+    Current Task: Create initial NPC data, including their social web and preferred location.
     
     **CRITICAL DESIGN INSTRUCTIONS:**
-    1. **Conflict-Ready Roles**: Include characters naturally opposed to each other (e.g., a hidden assassin vs. a retired constable, a rich merchant vs. a bandit spy).
-    2. **Sects**: Use JX3 sects (Tian Ce, Chun Yang, Wan Hua, Tang Sect, Ming Jiao, Five Venoms, etc.).
-    3. **Volatile Secrets**: The "Deep Secret" must be something that, if revealed, causes immediate fighting or tragedy (e.g., "I murdered the Village Chief's son," "I am poisoning the well").
+    1. **Conflict & Connection**: Ensure some NPCs are *already* connected. 
+       - Pairs of **Lovers** (情缘).
+       - Pairs of **Enemies** (死敌).
+       - **Master/Disciple** (师徒).
+       - Use 'initialConnectionName' and 'initialConnectionType' to define these.
+    2. **Spawn Zone**: Assign a 'spawnZone' based on their role:
+       - 'Market': Merchants, Innkeepers, Blacksmiths, Beggars.
+       - 'Official': Village Chief, Guards, Soldiers (Tian Ce).
+       - 'Temple': Monks (Shaolin), Taoists (Chun Yang), Doctors (Wan Hua).
+       - 'Secluded': Hermits, Assassins (Tang Sect), Cultists (Ming Jiao), Witches (Five Venoms).
+    3. **Roles**: Use JX3 sects or classic Wuxia roles.
+    4. **Volatile Secrets**: The "Deep Secret" must be dangerous.
     
     Language Requirement: 
-    - The 'gender' field must be 'Male' or 'Female' (English Enum).
-    - All other text fields (name, role, publicPersona, deepSecret, currentMood, lifeGoal) MUST BE IN SIMPLIFIED CHINESE.
+    - 'gender': 'Male' or 'Female'.
+    - 'spawnZone': One of ['Market', 'Official', 'Temple', 'Secluded'].
+    - 'initialConnectionType': One of ['Lover', 'Enemy', 'Master', 'Disciple', 'Family'] or null.
+    - All other text fields MUST BE IN SIMPLIFIED CHINESE.
     
     Output strictly valid JSON matching the schema.
   `;
@@ -87,8 +98,11 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
                   deepSecret: { type: Type.STRING },
                   lifeGoal: { type: Type.STRING },
                   currentMood: { type: Type.STRING },
+                  spawnZone: { type: Type.STRING, enum: ['Market', 'Official', 'Temple', 'Secluded'] },
+                  initialConnectionName: { type: Type.STRING, nullable: true },
+                  initialConnectionType: { type: Type.STRING, enum: ['Lover', 'Enemy', 'Master', 'Disciple', 'Family'], nullable: true }
                 },
-                required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'lifeGoal', 'currentMood']
+                required: ['name', 'age', 'gender', 'role', 'publicPersona', 'deepSecret', 'lifeGoal', 'currentMood', 'spawnZone']
               }
             }
           }
@@ -98,12 +112,12 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
 
     const data = JSON.parse(response.text || "{}") as InitializationResponse;
     
-    // Post-process to add IDs and initial empty relationships
+    // Post-process to add IDs and initial empty relationships (will be populated in game engine)
     return data.npcs.map((npc, index) => ({
       ...npc,
       id: `npc-${Date.now()}-${index}`,
       status: 'Normal',
-      position: { x: index % 3, y: Math.floor(index / 3) }, // Simple grid layout
+      position: { x: 0, y: 0 }, // Placeholder, will be set by Smart Placement
       relationships: [] 
     }));
   });

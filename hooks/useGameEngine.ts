@@ -73,78 +73,164 @@ export const useGameEngine = () => {
     };
   };
 
+  // --- Smart Placement Algorithm ---
+  const assignPositions = (npcs: NPC[], gridMap: string[][]): { npcs: NPC[], grid: string[][] } => {
+    const newGridMap = JSON.parse(JSON.stringify(gridMap));
+    const assignedNPCs = [...npcs];
+    
+    // Define Zones based on 4x4 Grid
+    // y, x coordinates
+    const ZONES: Record<string, {x:number, y:number}[]> = {
+        'Market': [{x:2, y:2}, {x:1, y:2}, {x:0, y:2}, {x:3, y:1}, {x:2, y:1}], // Center-ish / Smithy / Inn
+        'Temple': [{x:0, y:1}, {x:3, y:1}, {x:2, y:0}], // Daoist Temple / Garden
+        'Official': [{x:1, y:1}, {x:2, y:1}, {x:0, y:0}], // Chief / Training
+        'Secluded': [{x:3, y:3}, {x:1, y:3}, {x:0, y:3}, {x:3, y:0}], // Cave / Hut / Reeds
+    };
+
+    // Helper: Find first available slot in preferred zone, or random
+    const findSlot = (zoneName: string | undefined, occupied: Set<string>): {x:number, y:number} => {
+        let candidates = zoneName ? ZONES[zoneName] : [];
+        if (!candidates || candidates.length === 0) {
+            // Fallback to random if zone undefined
+             candidates = [];
+             for(let y=0; y<4; y++) for(let x=0; x<4; x++) candidates.push({x,y});
+        }
+
+        // Try to find a slot that isn't crowded (let's say max 2 per cell initially)
+        // But for simplicity, we just pick from candidates.
+        // If we want adjacency, we handle it in the main loop.
+        
+        // Shuffle candidates for variety
+        candidates = candidates.sort(() => Math.random() - 0.5);
+        return candidates[0];
+    };
+
+    const positionMap: Record<string, {x:number, y:number}> = {};
+
+    // 1. Group by Connection (Lover/Family/Master/Enemy should be near)
+    // We iterate and place. If NPC has a connection that is ALREADY placed, we try to place adjacent.
+    // If not placed, we place normally and wait for the other to place near us (or force it).
+    
+    // Sort so that people with connections are processed? 
+    // Actually, simple pass: 
+    // If A has connection B:
+    //   If B has pos -> place A near B.
+    //   If B has no pos -> place A in Zone, store A's pos. When B comes, B checks A.
+    
+    for (let i = 0; i < assignedNPCs.length; i++) {
+        const npc = assignedNPCs[i];
+        let pos = {x: 0, y: 0};
+        
+        // Check connection
+        let connectionTarget = null;
+        if (npc.initialConnectionName) {
+            connectionTarget = assignedNPCs.find(n => n.name === npc.initialConnectionName && positionMap[n.id]);
+        }
+
+        if (connectionTarget) {
+            const targetPos = positionMap[connectionTarget.id];
+            // Place in same cell or adjacent
+            const offsets = [{dx:0, dy:0}, {dx:1, dy:0}, {dx:-1, dy:0}, {dx:0, dy:1}, {dx:0, dy:-1}];
+            // Filter valid grid
+            const validNeighbors = offsets.map(o => ({x: targetPos.x + o.dx, y: targetPos.y + o.dy}))
+                                          .filter(p => p.x >=0 && p.x < 4 && p.y >= 0 && p.y < 4);
+            // Pick one
+            pos = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+        } else {
+            // Place in Zone
+            pos = findSlot(npc.spawnZone, new Set());
+        }
+
+        positionMap[npc.id] = pos;
+        assignedNPCs[i].position = pos;
+
+        // --- Rename Location Logic (Flavor) ---
+        // Dynamically rename the cell based on who lives there now
+        const {x, y} = pos;
+        const currentName = newGridMap[y][x];
+        const role = npc.role;
+        const name = npc.name;
+
+        // Only rename generic locations or overwrite based on priority
+        let newName = currentName;
+        
+        // Priority: Chief > Sect Specific > Merchant > Common
+        if (role.includes('村长') || role.includes('盟主')) newName = '村长家';
+        else if (role.includes('铁匠') || role.includes('藏剑')) newName = `${name.substring(0,1)}氏铁铺`;
+        else if (role.includes('医') || role.includes('万花')) newName = '百草药庐';
+        else if (role.includes('酒') || role.includes('栈')) newName = '稻香酒肆';
+        else if (role.includes('丐')) newName = '破庙';
+        else if (role.includes('天策') || role.includes('军')) newName = '演武场';
+        else if (role.includes('五毒')) newName = '苗疆禁地';
+        else if (role.includes('纯阳') || role.includes('道')) newName = '道观';
+        
+        // Update map only if it hasn't been claimed by a higher priority role?
+        // Simple override for now to reflect the latest interesting resident
+        if (newName !== currentName) {
+            newGridMap[y][x] = newName;
+        }
+    }
+
+    return { npcs: assignedNPCs, grid: newGridMap };
+  };
+
   // --- Actions ---
 
   const startGame = async (selectedMode: GameMode) => {
     setGameState(prev => ({ ...prev, isSimulating: true }));
     setErrorMsg(null);
     try {
-        // Generate 10 Villagers for more complexity
+        // Generate 10 Villagers
         const rawNPCs = await generateVillage(10);
         
-        // Map & Position Logic
-        const newGridMap = JSON.parse(JSON.stringify(LOCATION_MAP));
-        const availableSlots = [];
-        for(let y=0; y<4; y++) for(let x=0; x<4; x++) availableSlots.push({x,y});
-        availableSlots.sort(() => Math.random() - 0.5);
+        // Apply Smart Placement Algorithm
+        const { npcs: positionedNPCs, grid: newGridMap } = assignPositions(rawNPCs, LOCATION_MAP);
 
-        const householdLocations: Record<string, {x:number, y:number}> = {};
+        // Build Initial Relationships
+        positionedNPCs.forEach(npc => {
+            if (npc.initialConnectionName && npc.initialConnectionType) {
+                const target = positionedNPCs.find(t => t.name === npc.initialConnectionName);
+                if (target) {
+                    const type = npc.initialConnectionType as RelationshipType;
+                    let affinity = 0;
+                    let trust = 50;
 
-        const positionedNPCs = rawNPCs.map((npc) => {
-            const r = npc.role;
-            const n = npc.name;
-            const p = npc.publicPersona || '';
-            let householdKey = null;
+                    if (type === 'Lover') { affinity = 80; trust = 90; }
+                    else if (type === 'Enemy') { affinity = -80; trust = 0; }
+                    else if (type === 'Master') { affinity = 50; trust = 80; }
+                    else if (type === 'Disciple') { affinity = 50; trust = 60; }
+                    else if (type === 'Family') { affinity = 60; trust = 80; }
 
-            // Wuxia/JX3 Sect Mapping Logic
-            if (r.includes('村长') || n.includes('村长') || r.includes('盟主')) householdKey = 'CHIEF';
-            else if (r.includes('藏剑') || r.includes('铁匠') || r.includes('铸')) householdKey = 'HIDDEN_SWORD';
-            else if (r.includes('万花') || r.includes('医') || r.includes('药') || r.includes('琴')) householdKey = 'WAN_HUA';
-            else if (r.includes('杂货') || r.includes('商') || r.includes('镖')) householdKey = 'MERCHANT';
-            else if (r.includes('天策') || r.includes('军') || r.includes('将') || r.includes('猎')) householdKey = 'TIAN_CE';
-            else if (r.includes('纯阳') || r.includes('道') || r.includes('剑客')) householdKey = 'CHUN_YANG';
-            else if (r.includes('少林') || r.includes('和尚') || r.includes('僧')) householdKey = 'SHAOLIN';
-            else if (r.includes('书生') || r.includes('秀才') || r.includes('长歌')) householdKey = 'SCHOLAR';
-            else if (r.includes('丐') || r.includes('乞') || r.includes('流浪')) householdKey = 'BEGGAR';
-            else if (r.includes('七秀') || r.includes('舞') || r.includes('女侠')) householdKey = 'QI_XIU';
-            else if (r.includes('唐门') || r.includes('刺客') || r.includes('暗器')) householdKey = 'TANG_SECT';
-            else if (r.includes('五毒') || r.includes('蛊') || r.includes('巫')) householdKey = 'FIVE_VENOMS';
-            else if (r.includes('明教') || r.includes('波斯') || r.includes('火')) householdKey = 'MING_JIAO';
-            else if (r.includes('恶人') || r.includes('匪') || r.includes('盗')) householdKey = 'VILLAIN';
-            else if (r.includes('酒') || r.includes('厨') || r.includes('小二')) householdKey = 'INN';
-            
-            let pos;
-            if (householdKey && householdLocations[householdKey]) {
-                // Join existing household
-                pos = householdLocations[householdKey];
-            } else {
-                // Find a new slot
-                pos = availableSlots.pop() || {x: 0, y: 0};
-                if (householdKey) householdLocations[householdKey] = pos;
-
-                // Update Map Name Logic with Wuxia flavors BUT scaled down to village size
-                let locName = `${n}居`; // Default generic
-                
-                // Specific Location Mappings (Village Scale)
-                if (householdKey === 'CHIEF') locName = '村长家';
-                else if (householdKey === 'HIDDEN_SWORD') locName = '叶家铁铺';
-                else if (householdKey === 'WAN_HUA') locName = '村口医庐';
-                else if (householdKey === 'MERCHANT') locName = '杂货摊';
-                else if (householdKey === 'TIAN_CE') locName = '校场';
-                else if (householdKey === 'CHUN_YANG') locName = '小道观';
-                else if (householdKey === 'SHAOLIN') locName = '知客寮';
-                else if (householdKey === 'SCHOLAR') locName = '私塾';
-                else if (householdKey === 'BEGGAR') locName = '破庙一角';
-                else if (householdKey === 'QI_XIU') locName = '水榭';
-                else if (householdKey === 'TANG_SECT') locName = '竹林小屋';
-                else if (householdKey === 'FIVE_VENOMS') locName = '苗疆木屋';
-                else if (householdKey === 'MING_JIAO') locName = '异域营帐';
-                else if (householdKey === 'VILLAIN') locName = '黑店';
-                else if (householdKey === 'INN') locName = '稻香酒肆';
-                
-                newGridMap[pos.y][pos.x] = locName;
+                    npc.relationships.push({
+                        targetId: target.id,
+                        targetName: target.name,
+                        type: type,
+                        affinity: affinity,
+                        trust: trust,
+                        knownSecrets: []
+                    });
+                    
+                    // Add reciprocal if missing
+                    const reciprocalTypeMap: Record<string, RelationshipType> = {
+                        'Lover': 'Lover', 'Enemy': 'Enemy', 'Family': 'Family',
+                        'Master': 'Disciple', 'Disciple': 'Master'
+                    };
+                    
+                    // We assume the loop will hit the other person eventually or we rely on Gemini to generate pairs.
+                    // But to be safe, let's inject the reciprocal right now if not exists
+                    const existingRel = target.relationships.find(r => r.targetId === npc.id);
+                    if (!existingRel) {
+                        target.relationships.push({
+                            targetId: npc.id,
+                            targetName: npc.name,
+                            type: reciprocalTypeMap[type] || 'Friend',
+                            affinity: affinity,
+                            trust: trust,
+                            knownSecrets: []
+                        });
+                    }
+                }
             }
-            return { ...npc, position: pos };
         });
 
         const objective = generateObjective(selectedMode, positionedNPCs);
