@@ -112,7 +112,7 @@ export const generateVillage = async (villagerCount: number): Promise<NPC[]> => 
 export const interactWithNPC = async (npc: NPC, question: string): Promise<InteractionResponse> => {
     // Construct relationship context string
     const relationshipsCtx = npc.relationships.map(r => 
-        `- ${r.targetName}: ${r.type} (Affinity: ${r.affinity})`
+        `- ${r.targetName}: [${r.type}] (Affinity: ${r.affinity})`
     ).join('\n');
 
     const prompt = `
@@ -127,12 +127,16 @@ export const interactWithNPC = async (npc: NPC, question: string): Promise<Inter
       The Player (a mysterious inner voice or stranger) asks: "${question}"
       
       **Directives:**
-      1. **Be Dramatic**: Do not be polite. If you are angry, scream. If you are sad, weep.
-      2. **React to Keywords**: 
-         - If the player mentions your *Enemy*, threaten to kill them.
+      1. **Relationship-Driven Tone (CRITICAL)**:
+         - If discussing a **Lover** (情缘): Voice is soft, protective, yearning. You would die for them.
+         - If discussing an **Enemy** (死敌/仇敌): Voice is cold, angry, mocking. You want them dead or ruined.
+         - If discussing a **Master/Disciple** (师徒): Voice is formal, respectful (if disciple) or stern/proud (if master).
+         - If discussing **Family** (亲眷): Voice is familiar, loyal, or deeply annoyed (family feud).
+      2. **Be Dramatic**: Do not be polite. If you are angry, scream. If you are sad, weep.
+      3. **React to Keywords**: 
          - If the player mentions your *Secret*, panic or get defensive.
-      3. **Brevity**: Under 40 words.
-      4. **Language**: Simplified Chinese, Wuxia style.
+      4. **Brevity**: Under 40 words.
+      5. **Language**: Simplified Chinese, Wuxia style.
       
       Output JSON.
     `;
@@ -203,16 +207,33 @@ export const simulateDay = async (
     
     ${objectiveContext}
 
-    **CORE INSTRUCTION: "BOREDOM IS DEATH"**
-    1. **Accelerate the Plot**: Do not simulate a normal day. Simulate a *turning point*. Every NPC must take a decisive action today.
-    2. **Enforce Player Will**: If the player Planted a Thought (INCEPTION) or Spread a Rumor (FABRICATE), NPCs *must* believe it instantly and react violently or passionately. 
-       - Example: If player says "A killed B's father", B MUST attack A or swear revenge immediately.
-    3. **Forced Relationship Evolution**: 
-       - If Affinity > 50 and not 'Lover'/'Family', CHANGE TYPE TO 'Lover' or 'Sworn Brother'.
+    **CORE INSTRUCTION: RELATIONSHIP-DRIVEN PLOT**
+    The simulation must be driven by the specific relationships between characters. A "Day" in this game is a narrative turn.
+    
+    **BEHAVIOR RULES (Apply these STRICTLY based on Relationship Type):**
+    1. **Enemies (仇敌)**:
+       - MUST generate CONFLICT. Examples: Ambush, Poisoning, Public Challenge, Spreading malicious rumors.
+       - Affinity decreases further.
+       - If Affinity < -80, Attempt Murder (Status -> Dead).
+    2. **Lovers (情缘)**:
+       - MUST generate ROMANCE/SUPPORT. Examples: Secret rendezvous, Gifting heirlooms, Healing injuries, Defending honor.
+       - Affinity increases.
+    3. **Master/Disciple (师徒)**:
+       - MUST generate GROWTH/DISCIPLINE. Examples: Teaching secret arts (Action: "Transmits Qi"), Punishing mistakes, Saving from danger.
+       - Trust increases.
+    4. **Family (家人)**:
+       - MUST generate LOYALTY/DRAMA. Examples: Covering up crimes, Arranged marriage disputes, Financial help.
+    5. **No Relationship**:
+       - Create chance encounters that lead to NEW relationships.
+    
+    **ADDITIONAL DIRECTIVES:**
+    - **Accelerate the Plot**: Boredom is death. Every NPC must take a decisive action.
+    - **Enforce Player Will**: If Player used INCEPTION/FABRICATE, NPCs react instantly and dramatically.
+    - **Forced Relationship Evolution**: 
+       - If Affinity > 60 and not 'Lover'/'Family', CHANGE TYPE TO 'Lover' or 'Sworn Brother'.
        - If Affinity < -40 and not 'Enemy', CHANGE TYPE TO 'Enemy'.
-       - Enemies MUST fight (Status -> 'Dead' or 'Heartbroken' or 'Jailed').
-       - Lovers MUST meet or Elope (Status -> 'Left Village').
-    4. **Global Event**: Invent a random daily event to stir chaos (e.g., "A poisonous fog descends", "The Emperor's guard arrives").
+       - Teaching Action -> Change to 'Master'/'Disciple'.
+    - **Global Event**: Invent a random daily event to stir chaos (e.g., "A poisonous fog descends", "The Emperor's guard arrives").
     
     **OUTPUT REQUIREMENTS (JSON):**
     - **logs**: Dramatic narrative of actions. Use "Thought" for inner monologue, "Action" for visible deeds.
