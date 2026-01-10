@@ -58,7 +58,7 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
             <div className="flex gap-1">
                 {isDead && <span className="text-retro-red text-[10px] border border-retro-red px-1">已死亡</span>}
                 {isQiDeviated && <span className="text-purple-500 text-[10px] border border-purple-500 px-1 animate-pulse">走火入魔</span>}
-                {isInjured && <span className="text-orange-500 text-[10px] border border-orange-500 px-1">重伤</span>}
+                {isInjured && <span className="text-orange-500 text-[10px] border border-orange-500 px-1 animate-pulse">重伤</span>}
             </div>
         </h2>
         <div className="flex justify-between text-stone-400 text-xs mt-1">
@@ -70,9 +70,9 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
       {/* RPG Stats Section */}
       <div className="bg-black/20 p-2 rounded border border-white/5">
         <h3 className="text-retro-text text-xs uppercase font-bold mb-2">基础属性</h3>
-        <StatBar label="气血 (HP)" value={npc.hp} colorClass="bg-retro-red" />
+        <StatBar label="气血 (HP)" value={npc.hp} colorClass={isInjured ? "bg-red-800 animate-pulse" : "bg-retro-red"} />
         <StatBar label="武力 (MP)" value={npc.mp} colorClass="bg-retro-accent" />
-        <StatBar label="入魔 (SAN)" value={npc.san} colorClass="bg-purple-600" />
+        <StatBar label="入魔 (SAN)" value={npc.san} colorClass={isQiDeviated ? "bg-purple-500 animate-pulse" : "bg-purple-600"} />
       </div>
 
       <div>
@@ -106,6 +106,7 @@ const NPCDetail: React.FC<NPCDetailProps> = ({ npc }) => {
                     npc.status === 'Normal' ? 'text-retro-green' : 
                     isQiDeviated ? 'text-purple-500 font-bold' :
                     isDead ? 'text-stone-500' :
+                    isInjured ? 'text-red-500 font-bold' :
                     'text-retro-accent'
                 }>{statusCN}</span>
             </div>

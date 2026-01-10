@@ -84,7 +84,7 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                     else if (hasLeft) emoji = '💨';
                     else if (isHeartbroken) emoji = '💔';
                     else if (isQiDeviated) emoji = '👹'; // Demon/Ogre mask for frenzy
-                    else if (isInjured) emoji = '🤕';
+                    else if (isInjured) emoji = '🤕'; // Bandage head for injury
                     else emoji = npc.gender === 'Male' ? '👨🏻' : '👩🏻';
 
                     // Dynamic styling based on crowding
@@ -124,7 +124,7 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                                 ${hasLeft ? 'border-dashed border-stone-600 bg-black/40 opacity-40 grayscale' : ''}
                                 ${isDead || isJailed || isHeartbroken ? 'bg-stone-900 grayscale opacity-80' : ''}
                                 ${isQiDeviated ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse' : ''}
-                                ${isInjured ? 'border-red-800 bg-red-900/20' : ''}
+                                ${isInjured ? 'border-red-800 bg-red-900/40 animate-pulse' : ''}
                                 ${containerPadding}
                             `}
                         >
@@ -141,11 +141,13 @@ const VillageMap: React.FC<VillageMapProps> = ({ npcs, onSelectNPC, selectedNPC,
                             )}
 
                             {/* Status Label for Inactive - Only show if not crowded, otherwise use icon/color */}
-                            {isInactive && !isCrowded && (
+                            {(isInactive || isInjured || isQiDeviated) && !isCrowded && (
                                 <div className={`text-[9px] font-bold uppercase mt-0.5 px-1 rounded
                                     ${isDead ? 'text-retro-red bg-retro-red/10' : 
                                       isJailed ? 'text-stone-400 bg-stone-700' : 
                                       isHeartbroken ? 'text-purple-400 bg-purple-900/30' :
+                                      isInjured ? 'text-red-200 bg-red-900' :
+                                      isQiDeviated ? 'text-purple-300 bg-purple-900' :
                                       'text-stone-500'}
                                 `}>
                                     {STATUS_MAP[npc.status] || npc.status}

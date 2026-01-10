@@ -79,22 +79,39 @@ export const useGameEngine = () => {
   const assignPositions = (npcs: NPC[], gridMap: string[][]): { npcs: NPC[], grid: string[][] } => {
     const newGridMap = JSON.parse(JSON.stringify(gridMap));
     const assignedNPCs = [...npcs];
+    const occupied = new Set<string>();
     
-    // Define Zones based on 4x4 Grid
+    // Define Zones based on 4x4 Grid and LOCATION_MAP content
+    // y0: Entrance, Lake, Tomb, Reeds
+    // y1: Temple, Martial, Chief, Herb
+    // y2: Smith, Tavern, Stage, Bamboo
+    // y3: Hunter, Altar, Tent, Cave
     const ZONES: Record<string, {x:number, y:number}[]> = {
-        'Market': [{x:2, y:2}, {x:1, y:2}, {x:0, y:2}, {x:3, y:1}, {x:2, y:1}],
-        'Temple': [{x:0, y:1}, {x:3, y:1}, {x:2, y:0}],
-        'Official': [{x:1, y:1}, {x:2, y:1}, {x:0, y:0}], 
-        'Secluded': [{x:3, y:3}, {x:1, y:3}, {x:0, y:3}, {x:3, y:0}],
+        'Market': [{x:0, y:2}, {x:1, y:2}, {x:2, y:2}, {x:3, y:2}], // Row 2: Commercial area
+        'Official': [{x:2, y:1}, {x:1, y:1}, {x:0, y:0}], // Chief's house, Martial field, Entrance
+        'Temple': [{x:0, y:1}, {x:3, y:1}, {x:3, y:0}], // Daoist Temple, Herb Garden, Reeds
+        'Secluded': [{x:3, y:3}, {x:1, y:3}, {x:2, y:0}, {x:2, y:3}], // Cave, Altar, Tomb, Tent
     };
 
-    const findSlot = (zoneName: string | undefined, occupied: Set<string>): {x:number, y:number} => {
+    const findSlot = (zoneName: string | undefined, occupiedSet: Set<string>): {x:number, y:number} => {
         let candidates = zoneName ? ZONES[zoneName] : [];
+        
+        // Fallback if zone is undefined or empty: use entire grid
         if (!candidates || candidates.length === 0) {
              candidates = [];
              for(let y=0; y<4; y++) for(let x=0; x<4; x++) candidates.push({x,y});
         }
+        
+        // Shuffle candidates for randomness
         candidates = candidates.sort(() => Math.random() - 0.5);
+
+        // Priority 1: Find a slot that is NOT occupied yet
+        const emptySlot = candidates.find(c => !occupiedSet.has(`${c.x},${c.y}`));
+        if (emptySlot) {
+            return emptySlot;
+        }
+
+        // Priority 2: If all preferred slots occupied, just pick a random one from candidates (allow overlap)
         return candidates[0];
     };
 
@@ -106,29 +123,45 @@ export const useGameEngine = () => {
         
         let connectionTarget = null;
         if (npc.initialConnectionName) {
+            // Only try to connect to someone who has ALREADY been placed
             connectionTarget = assignedNPCs.find(n => n.name === npc.initialConnectionName && positionMap[n.id]);
         }
 
         if (connectionTarget) {
+            // Relationship Priority: Spawn near connection
             const targetPos = positionMap[connectionTarget.id];
             const offsets = [{dx:0, dy:0}, {dx:1, dy:0}, {dx:-1, dy:0}, {dx:0, dy:1}, {dx:0, dy:-1}];
-            const validNeighbors = offsets.map(o => ({x: targetPos.x + o.dx, y: targetPos.y + o.dy}))
-                                          .filter(p => p.x >=0 && p.x < 4 && p.y >= 0 && p.y < 4);
-            pos = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+            
+            // Try to find valid neighbor slot
+            const validNeighbors = offsets
+                .map(o => ({x: targetPos.x + o.dx, y: targetPos.y + o.dy}))
+                .filter(p => p.x >=0 && p.x < 4 && p.y >= 0 && p.y < 4);
+            
+            // Try to find empty neighbor first
+            const emptyNeighbor = validNeighbors.find(p => !occupied.has(`${p.x},${p.y}`));
+            
+            if (emptyNeighbor) {
+                pos = emptyNeighbor;
+            } else {
+                pos = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+            }
         } else {
-            pos = findSlot(npc.spawnZone, new Set());
+            // Zone Priority
+            pos = findSlot(npc.spawnZone, occupied);
         }
 
         positionMap[npc.id] = pos;
         assignedNPCs[i].position = pos;
+        occupied.add(`${pos.x},${pos.y}`);
 
-        // Rename Logic
+        // Rename Logic based on who lives there
         const {x, y} = pos;
         const currentName = newGridMap[y][x];
         const role = npc.role;
         const name = npc.name;
 
         let newName = currentName;
+        // Only rename if it's a specific residence role
         if (role.includes('村长') || role.includes('盟主')) newName = '村长家';
         else if (role.includes('铁匠') || role.includes('藏剑')) newName = `${name.substring(0,1)}氏铁铺`;
         else if (role.includes('医') || role.includes('万花')) newName = '百草药庐';
@@ -138,6 +171,7 @@ export const useGameEngine = () => {
         else if (role.includes('五毒')) newName = '苗疆禁地';
         else if (role.includes('纯阳') || role.includes('道')) newName = '道观';
         
+        // Update map name if changed
         if (newName !== currentName) {
             newGridMap[y][x] = newName;
         }
@@ -170,14 +204,18 @@ export const useGameEngine = () => {
                     else if (type === 'Disciple') { affinity = 50; trust = 60; }
                     else if (type === 'Family') { affinity = 60; trust = 80; }
 
-                    npc.relationships.push({
-                        targetId: target.id,
-                        targetName: target.name,
-                        type: type,
-                        affinity: affinity,
-                        trust: trust,
-                        knownSecrets: []
-                    });
+                    // Fix: Check if source relationship already exists to prevent duplicates
+                    const existingSourceRel = npc.relationships.find(r => r.targetId === target.id);
+                    if (!existingSourceRel) {
+                        npc.relationships.push({
+                            targetId: target.id,
+                            targetName: target.name,
+                            type: type,
+                            affinity: affinity,
+                            trust: trust,
+                            knownSecrets: []
+                        });
+                    }
                     
                     const reciprocalTypeMap: Record<string, RelationshipType> = {
                         'Lover': 'Lover', 'Enemy': 'Enemy', 'Family': 'Family',
@@ -432,7 +470,7 @@ export const useGameEngine = () => {
                     } else if (newSan > 80) {
                         computedStatus = 'QiDeviated';
                     } else if (computedStatus === 'Injured' && newHp >= 20) {
-                        // Heal back to normal
+                        // Heal back to normal if previously injured and now HP >= 20
                         computedStatus = 'Normal';
                     } else if (computedStatus === 'QiDeviated' && newSan < 80) {
                         // Recover sanity
