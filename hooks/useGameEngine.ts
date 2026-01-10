@@ -5,6 +5,7 @@ import { INITIAL_LOG_ENTRY, MAX_AP_PER_DAY, LOCATION_MAP } from '../constants';
 import { generateVillage, simulateDay, interactWithNPC } from '../services/geminiService';
 import { generateObjective, setupVillage } from '../utils/gameSetup';
 import { processSimulationResults } from '../utils/simulationProcessor';
+import { APP_CONFIG } from '../config/appConfig';
 
 export const useGameEngine = () => {
   // --- State ---
@@ -25,12 +26,37 @@ export const useGameEngine = () => {
 
   const [selectedNPCId, setSelectedNPCId] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [hasSaveGame, setHasSaveGame] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isGameOverOverlayOpen, setIsGameOverOverlayOpen] = useState(false);
   const [interactionResult, setInteractionResult] = useState<{npcName: string, question: string, reply: string} | null>(null);
   const [pendingActions, setPendingActions] = useState<{type: string, content: string, targetId?: string}[]>([]);
 
   // --- Effects ---
+  
+  // Check for save game on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(APP_CONFIG.STORAGE_KEY);
+    if (saved) {
+        setHasSaveGame(true);
+    }
+  }, []);
+
+  // Auto-save logic (Debounced)
+  useEffect(() => {
+    if (hasStarted && !gameState.isSimulating && !gameState.gameOutcome) {
+        const timer = setTimeout(() => {
+            try {
+                localStorage.setItem(APP_CONFIG.STORAGE_KEY, JSON.stringify(gameState));
+                setHasSaveGame(true);
+            } catch (e) {
+                console.warn("Auto-save failed", e);
+            }
+        }, 1000); // Save 1 second after state settles
+        return () => clearTimeout(timer);
+    }
+  }, [gameState, hasStarted]);
+
   useEffect(() => {
     if (gameState.gameOutcome) {
         setIsGameOverOverlayOpen(true);
@@ -38,6 +64,23 @@ export const useGameEngine = () => {
   }, [gameState.gameOutcome]);
 
   // --- Actions ---
+
+  const loadGame = () => {
+      try {
+          const raw = localStorage.getItem(APP_CONFIG.STORAGE_KEY);
+          if (raw) {
+              const savedState = JSON.parse(raw);
+              setGameState(savedState);
+              setHasStarted(true);
+              setHasSaveGame(true);
+          } else {
+              setErrorMsg("未找到存档。");
+          }
+      } catch (e) {
+          console.error(e);
+          setErrorMsg("存档已损坏，无法读取。");
+      }
+  };
 
   const startGame = async (selectedMode: GameMode) => {
     setGameState(prev => ({ ...prev, isSimulating: true }));
@@ -228,6 +271,8 @@ export const useGameEngine = () => {
   return {
     gameState,
     hasStarted,
+    hasSaveGame,
+    loadGame,
     selectedNPCId,
     setSelectedNPCId,
     errorMsg,

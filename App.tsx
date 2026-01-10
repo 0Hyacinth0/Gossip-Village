@@ -29,6 +29,8 @@ const App: React.FC = () => {
         selectedMode={selectedMode}
         onSelectMode={setSelectedMode}
         onStart={() => engine.startGame(selectedMode)}
+        onLoadGame={engine.loadGame}
+        hasSaveGame={engine.hasSaveGame}
         isSimulating={engine.gameState.isSimulating}
         errorMsg={engine.errorMsg}
       />
@@ -156,4 +158,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-        

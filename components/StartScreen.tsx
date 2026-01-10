@@ -8,6 +8,8 @@ interface StartScreenProps {
   selectedMode: GameMode;
   onSelectMode: (mode: GameMode) => void;
   onStart: () => void;
+  onLoadGame: () => void;
+  hasSaveGame: boolean;
   isSimulating: boolean;
   errorMsg: string | null;
 }
@@ -16,6 +18,8 @@ const StartScreen: React.FC<StartScreenProps> = ({
   selectedMode, 
   onSelectMode, 
   onStart, 
+  onLoadGame,
+  hasSaveGame,
   isSimulating, 
   errorMsg 
 }) => {
@@ -60,13 +64,24 @@ const StartScreen: React.FC<StartScreenProps> = ({
 
       {errorMsg && <div className="text-retro-red mb-4 border border-retro-red p-2">{errorMsg}</div>}
 
-      <button 
-          onClick={onStart}
-          disabled={isSimulating}
-          className="px-8 py-4 bg-retro-panel border-2 border-retro-accent text-retro-accent hover:bg-retro-accent hover:text-retro-bg transition-all font-bold text-lg disabled:opacity-50"
-      >
-          {isSimulating ? '正在生成世界...' : '进入稻香村'}
-      </button>
+      <div className="flex flex-col gap-3 w-64">
+        <button 
+            onClick={onStart}
+            disabled={isSimulating}
+            className="w-full py-4 bg-retro-panel border-2 border-retro-accent text-retro-accent hover:bg-retro-accent hover:text-retro-bg transition-all font-bold text-lg disabled:opacity-50"
+        >
+            {isSimulating ? '正在生成世界...' : '进入稻香村'}
+        </button>
+
+        {hasSaveGame && !isSimulating && (
+             <button 
+                onClick={onLoadGame}
+                className="w-full py-3 bg-stone-900 border border-stone-600 text-stone-400 hover:border-retro-green hover:text-retro-green transition-all font-bold text-sm uppercase tracking-wider"
+            >
+                ▶ 继续前缘
+            </button>
+        )}
+      </div>
 
       {/* Version Footer */}
       <div className="absolute bottom-4 text-[10px] text-stone-700 font-mono tracking-widest opacity-60">
@@ -79,4 +94,3 @@ const StartScreen: React.FC<StartScreenProps> = ({
 };
 
 export default StartScreen;
-        

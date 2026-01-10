@@ -5,6 +5,9 @@ export const APP_CONFIG = {
   VERSION: "v0.9.7",
   CODENAME: "Mirage",
   
+  // Storage Key
+  STORAGE_KEY: "gossip_village_save_data_v1",
+
   // UI Display Strings
   NEWSPAPER_NAME: "稻香日报",
   
@@ -15,4 +18,3 @@ export const APP_CONFIG = {
   ENABLE_SOUND: false,
   ENABLE_ANIMATIONS: true,
 };
-        
