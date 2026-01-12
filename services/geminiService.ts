@@ -255,7 +255,7 @@ export const simulateDay = async (
        - **Qi Deviation**: SAN > 90 -> Status 'QiDeviated'. Attacks everyone.
 
     **GAME ENDING RULES:**
-    1. **Sandbox Mode**: The game should NOT end. Do not return a 'gameOutcome' unless every single NPC is Dead. There is no time limit.
+    1. **Sandbox Mode**: The game should NOT end. 'gameOutcome' MUST BE NULL. There is no time limit.
     2. **Matchmaker / Detective / Chaos Modes**: Evaluate strictly based on the "Objective". 
        - If the deadline (Day 7) is passed and goal NOT met -> 'Defeat'. 
        - If goal met -> 'Victory'.
@@ -265,7 +265,7 @@ export const simulateDay = async (
     - **logs**: Describe the movement and interactions strictly matching the MAP coordinates.
     - **statUpdates**: Calculate strictly based on events.
     - **newspaper**: Generate only for Deaths or Massacres.
-    - **gameOutcome**: Only provide this if the specific Game Mode ending conditions are met.
+    - **gameOutcome**: STRICTLY NULL for Sandbox. Only provide this if the specific Game Mode ending conditions are met.
 
     Language: Simplified Chinese.
   `;
@@ -360,6 +360,26 @@ export const simulateDay = async (
         }
     };
 
-    return await requestJSON<SimulationResponse>(prompt, schema);
+    const data = await requestJSON<SimulationResponse>(prompt, schema);
+
+    // --- SAFETY GUARD: SANDBOX MODE ---
+    // Some models (DeepSeek, Doubao) tend to hallucinate a 'Defeat' outcome in Sandbox mode 
+    // because they see 'gameOutcome' in schema and think they must fill it, even if prompted not to.
+    if (currentState.gameMode === 'Sandbox' && data.gameOutcome) {
+        console.warn("AI attempted to end Sandbox mode. Overriding.", data.gameOutcome);
+        
+        // Strict Check: Only allow ending if reason explicitly mentions "All Dead" or "Everyone died".
+        // Otherwise, assume it's a hallucination and clear it.
+        const reason = (data.gameOutcome.reason || "").toLowerCase();
+        const isTotalPartyKill = (reason.includes("dead") || reason.includes("死亡") || reason.includes("死光")) && 
+                                 (reason.includes("all") || reason.includes("everyone") || reason.includes("所有") || reason.includes("全部"));
+
+        if (!isTotalPartyKill) {
+             // Force clear the outcome so the game continues
+             data.gameOutcome = undefined; 
+        }
+    }
+    
+    return data;
   });
 };
