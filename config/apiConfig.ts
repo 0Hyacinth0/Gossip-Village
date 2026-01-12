@@ -4,24 +4,26 @@ import { GoogleGenAI, Type } from "@google/genai";
 // ============================================================================
 // 全局配置区域 (Configuration)
 // ============================================================================
-// 支持 'gemini' (Google SDK) 或 'openai' (通用兼容格式，如 DeepSeek, Moonshot 等)
-type AIProvider = 'gemini' | 'openai';
+// 支持 'gemini' (Google SDK), 'openai' (通用兼容格式), 'doubao' (火山引擎)
+type AIProvider = 'gemini' | 'openai' | 'doubao';
 
 export const API_CONFIG = {
-  // 1. 选择提供商: 'gemini' 或 'openai'
+  // 1. 选择提供商: 'gemini', 'openai', 'doubao'
   provider: 'gemini' as AIProvider, 
 
   // 2. API Key (从环境变量读取)
   apiKey: process.env.API_KEY,
   
   // 3. 模型 ID
-  // Gemini 示例: 'gemini-3-flash-preview', 'gemini-2.0-flash'
-  // DeepSeek 示例: 'deepseek-chat', 'deepseek-reasoner'
+  // Gemini: 'gemini-3-flash-preview', 'gemini-2.0-flash'
+  // DeepSeek: 'deepseek-chat', 'deepseek-reasoner'
+  // Doubao: 'doubao-seed-1-8-251228'
   modelId: 'gemini-3-flash-preview',
   
   // 4. Base URL
-  // Gemini (SDK自动处理，通常留空或默认): 'https://generativelanguage.googleapis.com'
+  // Gemini (SDK自动处理): 'https://generativelanguage.googleapis.com'
   // DeepSeek: 'https://api.deepseek.com'
+  // Doubao: 'https://ark.cn-beijing.volces.com/api/v3'
   // Local/Ollama: 'http://localhost:11434/v1'
   baseUrl: 'https://generativelanguage.googleapis.com',
 
@@ -38,7 +40,7 @@ const googleClient = new GoogleGenAI({ apiKey: API_CONFIG.apiKey });
 
 /**
  * 将 Google GenAI 的 Schema 对象转换为简单的 JSON 描述字符串，
- * 用于在 DeepSeek/OpenAI 模式下提示模型输出 JSON。
+ * 用于在 DeepSeek/OpenAI/Doubao 模式下提示模型输出 JSON。
  */
 function schemaToDescription(schema: any): string {
     if (!schema || !schema.properties) return "JSON Object";
@@ -91,11 +93,11 @@ export async function requestJSON<T>(prompt: string, responseSchema?: any): Prom
   }
 
   // --------------------------------------------------------------------------
-  // 分支 2: OpenAI Compatible (DeepSeek, etc.) via Fetch
+  // 分支 2: OpenAI Compatible (DeepSeek, Doubao, etc.) via Fetch
   // --------------------------------------------------------------------------
-  if (provider === 'openai') {
+  if (provider === 'openai' || provider === 'doubao') {
     // 构造请求体
-    // 对于 DeepSeek/OpenAI，我们需要在 Prompt 中显式强调 JSON 格式，因为 strict schema 支持各家不同
+    // 对于兼容接口，我们需要在 Prompt 中显式强调 JSON 格式
     // 我们将 schema 转换为字符串描述附加在 prompt 后
     let finalPrompt = prompt;
     if (responseSchema) {
@@ -108,7 +110,7 @@ export async function requestJSON<T>(prompt: string, responseSchema?: any): Prom
         { role: "system", content: "You are a creative storyteller and game engine. You respond strictly in JSON." },
         { role: "user", content: finalPrompt }
       ],
-      response_format: { type: "json_object" }, // 大多数兼容接口支持此参数
+      response_format: { type: "json_object" }, // 大多数兼容接口(包括豆包)支持此参数
       temperature: 0.7
     };
 
@@ -135,7 +137,7 @@ export async function requestJSON<T>(prompt: string, responseSchema?: any): Prom
     
     if (!content) throw new Error("API returned empty content");
     
-    // 清理可能的 Markdown 标记 (DeepSeek 有时会加上 ```json ...)
+    // 清理可能的 Markdown 标记
     const cleanContent = content.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     
     return JSON.parse(cleanContent) as T;
